@@ -1,0 +1,150 @@
+// Abstracted functions from the inventory management being done.
+function void SetOverlayBar(int owned, int capacity) {
+    SetAmmoAmountAndCapacity("SBARFlashOverlayAmmo", owned, capacity);
+}
+
+function void SetOverlayBar2(int owned, int capacity) {
+    SetAmmoAmountAndCapacity("SBARFlashOverlayAmmo2", owned, capacity);
+}
+
+function void SetOverlayBarHP(int owned, int capacity) {
+    SetAmmoAmountAndCapacity("HBARFlashOverlayAmmo", owned, capacity);
+}
+
+function void SetOverlayBarReverse(int owned, int capacity) {
+    SetAmmoAmountAndCapacity("SBARFlashOverlayAmmoR", owned, capacity);
+}
+
+function void SetOverlayBarReverse2(int owned, int capacity) {
+    SetAmmoAmountAndCapacity("SBARFlashOverlayAmmoR2", owned, capacity);
+}
+
+function void SetOverlayBarReverseHP(int owned, int capacity) {
+    SetAmmoAmountAndCapacity("HBARFlashOverlayAmmoR", owned, capacity);
+}
+
+function void SetFlashingBar(void) {
+    SetInventory("SBARFlash",1);
+}
+
+function void SetFlashingBar2(void) {
+    SetInventory("SBARFlash2",1);
+}
+
+function void SetFlashingBarHP(void) {
+    SetInventory("HBARFlash",1);
+}
+
+function void SetDarkenedBar(void) {
+    SetInventory("SBARDarken",1);
+}
+
+function void SetDarkenedBar2(void) {
+    SetInventory("SBARDarken2",1);
+}
+
+function void SetDarkenedBarHP(void) {
+    SetInventory("HBARDarken",1);
+}
+
+function void SetMugshotColor(int cyan, int blue) {
+    SetMugshotColorGlow(cyan, blue, 0);
+}
+
+function void SetMugshotColorGlow(int cyan, int blue, int black) {
+    SetInventory("MugshotTransFlag", 1);
+    SetInventory("SBARMugshotCyan", cyan+1);
+    SetInventory("SBARMugshotBlue", blue+1);
+    SetInventory("SBARMugshotBlack", black+1);
+}
+
+function void DrawBarColor(int cyan, int blue) {
+    DrawBarColorGlow(cyan, blue, 0);
+}
+
+function void DrawBarColorGlow(int cyan, int blue, int black) {
+    if(CheckInventory("MugshotTransFlag") <= 0) {
+        SetMugshotColorGlow(cyan, blue, black);
+    }
+    SetInventory("BarTransFlag", 1);
+    SetInventory("SBARCyan", cyan+1);
+    SetInventory("SBARBlue", blue+1);
+    SetInventory("SBARBlack", black+1);
+    SetInventory("SBARDrawBar1", 1);
+    SetInventory("SBARAmmoOffset", BARLIB_max(1, CheckInventory("SBARAmmoOffset")));
+    DrawNormalAmmo();
+}
+
+function void DrawBar2Color(int cyan, int blue) {
+    DrawBar2ColorGlow(cyan, blue, 0);
+}
+
+function void DrawBar2ColorGlow(int cyan, int blue, int black) {
+    if(CheckInventory("MugshotTransFlag") <= 0) {
+        SetMugshotColorGlow(cyan, blue, black);
+    }
+    SetInventory("BarTransFlag2", 1);
+    SetInventory("SBARCyan2", cyan+1);
+    SetInventory("SBARBlue2", blue+1);
+    SetInventory("SBARBlack2", black+1);
+    SetInventory("SBARDrawBar2", 1);
+    SetInventory("SBARAmmoOffset", BARLIB_max(2, CheckInventory("SBARAmmoOffset")));
+    DrawSecondAmmo();
+}
+
+function void DrawNormalAmmo(void) {
+    SetInventory("SBARDrawAmmo1", 1);
+}
+
+function void DrawSecondAmmo(void) {
+    SetInventory("SBARDrawAmmo2", 1);
+}
+
+function void RemoveCustomBar(int slot) {
+    SetInventory(StrParam(s:"CustSbarSlotFlag", i:slot), 0);
+}
+
+function void DrawCustomBar(int slot, int amount, int capacity) {
+    SetInventory(StrParam(s:"CustSbarSlotFlag", i:slot), 1);
+    SetAmmoAmountAndCapacity(StrParam(s:"CustSbarSlotAmmo", i:slot), amount, capacity);
+}
+
+// Many functions capable of being used for various bar actions.
+function int BARLIB_max (int a, int b) {
+	if (a > b)
+		return a;
+	return b;
+}
+
+function int GetActorHealth(int tid) {
+	return GetActorProperty(tid,APROP_Health);
+}
+
+function int GetActorMaxHealth(int tid) {
+	int r = GetActorProperty(tid,APROP_SpawnHealth);
+	if (r==0) r = 100;
+	return r;
+}
+
+function void SetAmmoAmountAndCapacity(str inventory_item, int amount, int capacity) {
+    SetAmmoCapacity(inventory_item,capacity);
+    SetInventory(inventory_item,amount);
+}
+
+function void SetInventory(str inventory_item, int amount) {
+    SetInventory2(inventory_item,amount,CheckInventory(inventory_item));
+}
+
+function void SetInventory2(str inventory_item, int amount, int currentamount) {
+    if(amount>currentAmount) GiveInventory(inventory_item,amount-currentAmount);
+    else if(amount<currentAmount) TakeInventory(inventory_item,currentAmount-amount);
+}
+
+function void SetActorInventory(int tid, str inventory_item, int amount) {
+    SetActorInventory2(tid,inventory_item,amount,CheckActorInventory(tid,inventory_item));
+}
+
+function void SetActorInventory2(int tid, str inventory_item, int amount, int currentamount) {
+    if(amount>currentAmount) GiveActorInventory(tid,inventory_item,amount-currentAmount);
+    else if(amount<currentAmount) TakeActorInventory(tid,inventory_item,currentAmount-amount);
+}

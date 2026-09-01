@@ -1,0 +1,12 @@
+// These global ints store basic system data.
+global int 3: IsTeamGame;
+global int 4: ServerMAX;
+
+// [Russ] These are global ints to allow values to be rolled at the beginning of rounds only.
+global int 5: RangedWepRandom;
+global int 6: RapidWepRandom;
+global int 7: CloseWepRandom;
+global int 8: PowerWepRandom;
+global int 9: ShieldWepRandom;
+global int 10: AoEWepRandom;
+global int 11: BusterWepRandom;

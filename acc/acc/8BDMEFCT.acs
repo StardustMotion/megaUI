@@ -1,0 +1,138 @@
+
+
+// Makes facer face target
+// takes in two TIDs
+function int ActorFace (int facer, int target)
+{
+	int x = (GetActorX(target) - GetActorX(facer));
+	int y = (GetActorY(target) - GetActorY(facer));
+	SetActorAngle(facer, VectorAngle(x, y));
+	return 0;
+}
+
+// (Russ) Thrust an actor towards another with offsets
+function void actorPull(int puller, int pullee, int force, int xOff, int yOff, int zOff)
+{
+	int angle = VectorAngle((GetActorX(puller)+xOff)-GetActorX(pullee), (GetActorY(puller)+yOff)-GetActorY(pullee));
+	int pitch = pitchBetween(puller, pullee, xOff, yOff, zOff);
+	
+	angle = angle >> 8; // Convert fixed point angle to byte angle.
+	int horizForce = fixedMul(cos(pitch), force<<16)>>16;
+	int vertiForce = fixedMul(sin(pitch), force<<16)>>16;
+	
+	//PrintBold(s:"pitch: ", f:pitch, s:"\n",
+	//          s:"horizontal force: ", i:horizForce, s:"\n",
+	//		  s:"vertical force: ", i:vertiForce, s:"\n");
+	//
+	
+	ThrustThing(angle, horizForce, horizForce>30, pullee);
+	ThrustThingZ(pullee, vertiForce*4, 0, 0);
+}
+
+// (Russ) Stolen from Evil Escort, which in turn was stolen from the ZDoom forum
+function int pitchBetween(int looker, int target, int xOff, int yOff, int zOff)
+{
+	int x, y, z, ang, pitch, len;
+	x = (getactorx(target) + xOff) - getactorx(looker);
+    y = (getactory(target) + yOff)- getactory(looker);
+
+	ang = vectorangle(x,y);
+	if(((ang+0.125)%0.5) > 0.25) len = fixeddiv(y, sin(ang));
+	else len = fixeddiv(x, cos(ang));
+
+	z = (getactorz(target) - zOff) - getactorz(looker);
+
+	pitch = -vectorangle(len, z);
+	return pitch;
+}
+
+function void SetInventory(str inventory_item, int amount)
+{
+SetInventory2(inventory_item,amount,CheckInventory(inventory_item));
+}
+
+function void SetInventory2(str inventory_item, int amount, int currentamount)
+{
+if(amount>currentAmount) GiveInventory(inventory_item,amount-currentAmount);
+else if(amount<currentAmount) TakeInventory(inventory_item,currentAmount-amount);
+}
+
+function void SetActorInventory(int tid, str inventory_item, int amount)
+{
+SetActorInventory2(tid,inventory_item,amount,CheckActorInventory(tid,inventory_item));
+}
+
+function void SetActorInventory2(int tid, str inventory_item, int amount, int currentamount)
+{
+if(amount>currentAmount) {
+	GiveActorInventory(tid,inventory_item,amount-currentAmount);
+} else if(amount<currentAmount) {
+	TakeActorInventory(tid,inventory_item,currentAmount-amount);
+}
+}
+
+// Gives inventory to given TID, but accounts for replacement
+// Returns whether the actor exists, won't log invalid inventory!
+function int GiveActorReplacedInventory(int tid, str item, int amt)
+{
+	int tempTid = UniqueTID();
+	int ret = SpawnForced(item, GetActorX(tid), GetActorY(tid), GetActorZ(tid), tempTid, 0);
+	if(ret)
+	{
+		GiveActorInventory(tid, GetActorClass(tempTid), amt);
+		Thing_Remove(tempTid);
+	}
+
+	return ret;
+}
+
+function int GiveReplacedInventory(str item, int amt)
+{
+	int tempTid = UniqueTID();
+	int ret = SpawnForced(item, GetActorX(0), GetActorY(0), GetActorZ(0), tempTid, 0);
+	if(ret)
+	{
+		GiveInventory(GetActorClass(tempTid), amt);
+		Thing_Remove(tempTid);
+	}
+
+	return ret;
+}
+
+// Taken from unkown
+function int ActorLookAt(int looker, int target, int zoff, int lookerzoff)
+{
+   int x, y, z, ang, pitch, len;
+   x = getactorx(target) - getactorx(looker);
+   y = getactory(target) - getactory(looker);
+
+   ang = vectorangle(x,y);
+   if(((ang+0.125)%0.5) > 0.25) len = fixeddiv(y, sin(ang));
+   else len = fixeddiv(x, cos(ang));
+
+   z = (getactorz(target) + zoff) - (getactorz(looker)+lookerzoff);
+
+   pitch = -vectorangle(len, z);
+
+   setactorpitch(looker, pitch);
+   return 0;
+}
+
+// Spawns the given actor at a given position, copying the activator's translation
+function int SpawnCopyTranslation(str classname, int x, int y, int z)
+{
+	return SpawnCopyTranslationAngle(classname, x, y, z, 0);
+}
+
+function int SpawnCopyTranslationAngle(str classname, int x, int y, int z, int angle)
+{
+	int u = UniqueTID();
+	
+	int ret = Spawn(classname, x, y, z, u, angle);
+	
+	Thing_SetTranslation(u, -1);
+	
+	Thing_ChangeTID(u,0);
+
+	return ret;
+}

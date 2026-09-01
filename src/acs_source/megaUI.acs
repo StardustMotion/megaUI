@@ -1,0 +1,59 @@
+
+                //////////////////////////////////////////////////////////////
+                //                                                          //
+                //   ███╗   ███╗███████╗ ██████╗  █████╗     ██╗   ██╗██╗   //
+                //   ████╗ ████║██╔════╝██╔════╝ ██╔══██╗    ██║   ██║██║   //
+                //   ██╔████╔██║█████╗  ██║  ███╗███████║    ██║   ██║██║   //
+                //   ██║╚██╔╝██║██╔══╝  ██║   ██║██╔══██║    ██║   ██║██║   //
+                //   ██║ ╚═╝ ██║███████╗╚██████╔╝██║  ██║    ╚██████╔╝██║   //
+                //   ╚═╝     ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝     ╚═════╝ ╚═╝   //
+                //                                                          //
+                //////////////////////////////////////////////////////////////
+
+// Alignment bitflags
+#DEFINE MGUI_CENTER   0x0
+#DEFINE MGUI_TOP      0x1
+#DEFINE MGUI_BOTTOM   0x2
+#DEFINE MGUI_LEFT     0x4
+#DEFINE MGUI_RIGHT    0x8
+
+script "oui" (void) {
+    while(true) {
+        Show(2000, "DOOMCURS", 160, 120, 320, 240, 1.0);
+        delay(35);
+        Hide(2000);
+        delay(35);
+    }
+}
+
+// -------------------------------------------------------------------------------------------
+//      API
+// -------------------------------------------------------------------------------------------
+
+// Renders a graphic on screen for 1 tic only
+function void Draw(str graphic, int x, int y, int width, int height, int alpha) {
+    Show(0, graphic, x, y, width, height, alpha);
+}
+
+// Renders a graphic on screen, until removed with Hide(id)
+function void Show(int id, str graphic, int x, int y, int width, int height, int alpha) {
+    DrawCore(id, "A", graphic, x, y, MGUI_CENTER, width, height, alpha);
+}
+
+// Remove a graphic on screen (drawn with Draw())
+function void Hide(int id) { 
+    HudMessageBold(s:""; HUDMSG_PLAIN, id, 0, 0, 0, 0, 0); 
+}
+
+
+// -------------------------------------------------------------------------------------------
+//      Internal / private 
+// -------------------------------------------------------------------------------------------
+
+function void DrawCore(int id, str value, str font, int x, int y, int alignment, int width, int height, int alpha) {
+	SetHudSize(width, height, true); 	
+	SetFont(font); 
+    x = (x<<16) | (alignment & MGUI_LEFT ? 0.1 : alignment & MGUI_RIGHT ? 0.2 : 0.0);
+    y = (y<<16) | (alignment & MGUI_TOP ? 0.1 : alignment & MGUI_BOTTOM ? 0.2 : 0.0);
+    HudMessageBold(s:value; HUDMSG_PLAIN|HUDMSG_ALPHA, id, CR_UNTRANSLATED, x, y, (id ? 0x8000000 : 1873), alpha);
+}

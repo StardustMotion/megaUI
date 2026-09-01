@@ -1,0 +1,15 @@
+// [Russ] In your source code, always include "zcommon.acs" before this file.
+// This was done for clarity and organizational purposes.
+
+// This file contains a number of variables added to make expanding 8BDM easier.
+// If using SLADE 3.1.0.5 or later, include this file in the same directory
+// as your source ACS before compiling. 
+// Otherwise, extract it to the same folder as your acc.exe.
+// Note that this file SHOULD NOT be compiled on its own.
+
+#include "8BDMDEFS.acs"
+#include "8BDMMATH.acs"
+#include "8BDMEFCT.acs"
+#include "8BDMHELP.acs"
+#include "8BDMINFO.acs"
+#include "8BDMVARS.acs"
