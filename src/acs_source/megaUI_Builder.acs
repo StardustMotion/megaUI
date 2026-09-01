@@ -1,0 +1,37 @@
+
+bool    mguiBuilderIsOpen = false;
+str     mguiBuilderGraphic = "";
+bool    mguiBuilderIsPainting = false;
+int     mguiBuilderHudWidth;
+int     mguiBuilderHudHeight;
+
+script "MegaUI Builder" (void) CLIENTSIDE {
+    if(!StartMouseMenu("MegaUI Builder Event"))
+        terminate;
+    mguiBuilderIsOpen = true;
+    ACS_NamedExecuteWithResult("core_freezeplayer",0,true);
+    while(!(GetPlayerInput(-1, INPUT_BUTTONS) & BT_JUMP)) {
+        if(mguiBuilderIsPainting) {
+            //int x = GetVirtualMouseX(mguiBuilderHudWidth);
+            //int y = GetVirtualMouseY(mguiBuilderHudHeight);
+            //Draw(mguiBuilderGraphic, x, y, mguiBuilderHudWidth, mguiBuilderHudHeight, 1.0);
+        }
+        delay(1);
+    }
+    ACS_NamedExecuteWithResult("core_freezeplayer",0,false);
+    mguiBuilderIsOpen = false;
+    EndMouseMenu();
+}
+
+script "MegaUI Builder Event" (int e, int areaId) CLIENTSIDE {
+
+}
+
+script "MegaUI Builder Chat" (int type, int message, int arg2) EVENT {
+    if (type == GAMEEVENT_CHAT) {
+        mguiBuilderIsPainting = true;
+        mguiBuilderGraphic = GetChatMessage(message, 0);
+        mguiBuilderHudWidth = MGUI_HUD_WIDTH;
+        mguiBuilderHudHeight = MGUI_HUD_HEIGHT;
+    }
+}
