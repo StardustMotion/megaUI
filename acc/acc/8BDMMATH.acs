@@ -1,0 +1,215 @@
+// Math functions used by MM8BDM.
+// These functions all perform calculations for generic purposes.
+// These functions DO NOT directly manupulate actors.
+// Include zcommon.acs before this.
+
+// Basic circle constants
+#define PI 3.141593
+#define R2 1.414213
+
+// Alias functions, since some things were renamed through reorganizing
+function int ceilOld(int fixedIn) { return zanCiel(fixedIn); }
+function int sqrt8(int number) { return zanSqrt(number); }
+
+// Returns absolute value of a given number
+function int abs(int x)
+{
+    if (x < 0)
+	{
+        return -x;
+	}
+    return x;
+}
+
+// Returns the larger of two values
+function int max(int x, int y)
+{
+	if(x > y) return x;
+	return y;
+}
+
+// Returns the smaller of two values
+function int min(int x, int y)
+{
+	if(x < y) return x;
+	return y;
+}
+
+// Returns X if it's been mn and mx; mn if below, and mx if it's above.
+function int clamp(int x, int mn, int mx) {
+	if(x < mn)
+		return mn;
+	
+	if(x > mx)
+		return mx;
+	
+	return x;
+}
+
+// Returns X in boolean form (0 = false, else true)
+function int intToBool(int x)
+{
+    if(x > 0)
+        return true;
+    return false;
+}
+
+// Returns a numerical version of the given numerical string
+function int parseInt(str in)
+{
+	int l = strLen(in);
+	int ret = 0;
+	for(int i = 0; i < l; i++)
+	{
+		ret *= 10;
+		ret += char2Dec(getChar(in, i));
+	}
+	return ret;
+}
+
+// Returns an integer with the value of the given numerical character ('0'-'9')
+// Returns -1 for everything else
+function int char2Dec(int ch)
+{
+	if(numBetween('0', ch, '9')) {
+		return ch - '0';
+	}
+	return -1;
+}
+
+// Returns if X is between mn and mx inclusive
+function bool numBetween(int mn, int x, int mx)
+{
+	return x >= mn && x <= mx;
+}
+
+// Given an angle, returns that angle's equivalent between 0.0 and 1.0.
+// Fixed angles only
+function int normalize(int x)
+{
+    while(x < 0)
+    {
+        x += 1.0;
+    }
+    while(x > 1.0)
+    {
+        x -= 1.0;
+    }
+    return x;
+}
+
+// Used by Wire adaptor
+function int magnitudeThree(int x, int y, int z)
+{
+    return VectorLength(VectorLength(x, y), z) >> 16;
+}
+
+// The following functions require our own implementation because ZDoom got them, but Zandronum has not yet.
+
+// Returns the ceiling integer of a given fixed point number
+function int zanCiel(int fixedIn)
+{
+	if(fixedIn % 65536 != 0)
+	{
+		return (fixedIn >> 16) + 1;
+	}
+	return fixedIn >> 16;
+}
+
+// Returns the closest integer
+function int zanRound(int fixedIn)
+{
+	int dec = fixedIn % 65536;
+	if(dec > (65536 / 2))
+	{
+		return (fixedIn >> 16) + 1;
+	}
+	return fixedIn >> 16;
+}
+
+// sqrt and distance functions from ZDoom wiki
+function int zanSqrt(int number)
+{
+	if(number <= 3)
+	{
+		if(number > 0)
+		{
+			return 1;
+		}
+		return 0;
+	}
+
+	int oldAns = number >> 1,                     // initial guess
+	    newAns = (oldAns + number / oldAns) >> 1; // first iteration
+
+	// main iterative method
+	while(newAns < oldAns)
+	{
+		oldAns = newAns;
+		newAns = (oldAns + number / oldAns) >> 1;
+	}
+
+	return oldAns;
+}
+
+// Linear interpolation
+function int FixedLerp(int a, int b, int t)
+{
+    return FixedMul((1.0 - t), a) + FixedMul(t, b);
+}
+
+// PackBytes and PackShorts functions from ACSUtils
+// Pack unsigned 8-bit values. ========================================
+function int PackBytes(int a, int b, int c, int d)
+{
+	return (a<<24) | (b<<16) | (c<<8) | d;
+}
+function int UnpackByte1(int x) { return (x>>24) & 0x000000FF; }
+function int UnpackByte2(int x) { return (x>>16) & 0x000000FF; }
+function int UnpackByte3(int x) { return (x>>8)  & 0x000000FF; }
+function int UnpackByte4(int x) { return (x>>0)  & 0x000000FF; }
+
+// Pack signed 16-bit values. =========================================
+function int PackShorts(int a, int b)
+{
+	return ((a + 0x8000)<<16) | ((b + 0x8000) & 0x0000FFFF);
+}
+function int UnpackShort1(int x) { return ((x>>16) & 0x0000FFFF) - 0x8000; }
+function int UnpackShort2(int x) { return ((x    ) & 0x0000FFFF) - 0x8000; }
+
+function int hex2Dec(str x)
+{
+	int ret = 0;
+	
+	for(int i = 0; i < strLen(x); i++)
+	{
+		ret *= 16;
+		int addVal = -1;
+		int ch = GetChar(x, i);
+
+		if(numBetween('0', ch, '9')) {
+			addval = char2Dec(ch);
+		}
+		if(addval == -1) {
+			if(numBetween('a', ch, 'f')) {
+				addval = 10 + (ch - 'a');
+			}
+		}
+		if(addval == -1) {
+			if(numBetween('A', ch, 'F')) {
+				addval = 10 + (ch - 'A');
+			}
+		}
+
+		if(addVal == -1) {
+			// [Russ] Normally, to help devs, I would have this here as a warning.
+			// But with it there, if a client dropped a connection packet, this warning would be thrown randomly.
+			// Not good optics. Gonna leave this out for now.
+			//Log(s:"\cgACS: RGBHex2Dec: Expected RGB color string to be 8 characters.");
+			return -1;
+		}
+		
+		ret += addVal;
+	}
+	return ret;
+}

@@ -1,0 +1,26 @@
+// will need zcommon.acs above this
+
+function int SpawnNewWepFunc(str classname) {
+	int u = UniqueTID();
+	int r = SpawnSpotForcedCopyVelocity(classname,0,u,GetActorAngle(0)>>8);
+	SetActorProperty(u,APROP_Gravity,GetActorProperty(0,APROP_Gravity));
+	SetActorFlagDecorate(u,"DROPPED",CheckFlag(0,"DROPPED"));
+	Thing_ChangeTID(u,ActivatorTID());
+	Thing_Remove(0);
+	return r;
+}
+
+function int SpawnSpotForcedCopyVelocity(str classname, int spottid, int tid, int angle) {
+	int r = SpawnSpotForced(classname, spottid, tid, angle);
+	SetActorVelocity(tid,GetActorVelX(0),GetActorVelY(0),GetActorVelZ(0),0,0);
+	return r;
+}
+
+function void SetActorFlagDecorate(int tid, str flagname, bool value) {
+	GiveActorInventoryZeroIsSelf(tid,StrParam(s:"ChangeFlag",s:flagname,i:value),1);
+}
+
+function void GiveActorInventoryZeroIsSelf(int tid, str inventory_item, int amount) {
+	if(tid==0) GiveInventory(inventory_item,amount);
+	else GiveActorInventory(tid,inventory_item,amount);
+}

@@ -1,0 +1,348 @@
+
+// Shared functions by below items
+function void SetNoSaveCvarInt(str cvar, int value)
+{
+	ConsoleCommand(StrParam(s:"set ",s:cvar,s:" ",i:value));
+}
+
+function void SetNoSaveCvarString(str cvar, str value)
+{
+	ConsoleCommand(StrParam(s:"set ",s:cvar,s:" \"",s:value,s:"\""));
+}
+
+// Weapon definitions, used for ammo and weapon management ==================================================================
+// String:  Tag         - The weapon's language tag, or its proper name (Ex. "TAG_ROLLINGCUTTER" or "Rolling Cutter")
+// String:  Actor       - The weapon's class name. (Ex. "RollingCutterWep")
+// String:  Icon        - The weapon's spawn sprite. (Ex. "WEA2F0")
+// String:  AmmoType    - The weapon's ammo class name. (Ex. "RollingCutterAmmo")
+// Fixed:   AmmoFactor  - The weapon's ammo collection rate. (1.0 for normal, bigger number for faster ammo regen, smaller number for slower ammo regen)
+// String:  Ammo2Type   - The weapon's ammo2 class name. (Ex. "RollingCutterAmmo")
+// Fixed:   Ammo2Factor - The weapon's ammo2 collection rate. (1.0 for normal, bigger number for faster ammo regen, smaller number for slower ammo regen)
+// Int:     Slot        - The weapon's slot, should match the actor definiton.
+// Bool:    MapValid    - Can you pick this weapon up from maps?
+// Bool:    LMSValid    - Can you get this weapon from the LMS rotation?
+// Bool:    EddieValid  - Can you get this weapon from Eddie?
+// -- Examples of use of this function in COREAMO.acs
+
+#define DTADD_SLOT_0      0
+#define DTADD_SLOT_BUSTER 1
+#define DTADD_SLOT_RANGED 2
+#define DTADD_SLOT_RAPID  3
+#define DTADD_SLOT_CLOSE  4
+#define DTADD_SLOT_POWER  5
+#define DTADD_SLOT_AOE    6
+#define DTADD_SLOT_SHIELD 7
+#define DTADD_SLOT_8      8
+#define DTADD_SLOT_9      9
+
+function int DefineWeapon(str wepTag, str wepActor, str wepIcon, str wepAmmo, int wepMult, int wepSlot, int wepMap, int wepLms, int wepEddie)
+{
+	return DefineDoubleAmmoWeapon(wepTag, wepActor, wepIcon, wepAmmo, wepMult, "", 0.00, wepSlot, wepMap, wepLms, wepEddie);
+}
+
+function int DefineDoubleAmmoWeapon(str wepTag, str wepActor, str wepIcon, str wepAmmo, int wepMult, str wepAmmo2, int wepMult2, int wepSlot, int wepMap, int wepLms, int wepEddie)
+{
+	SetNoSaveCvarString("8bdm_wepTag", wepTag);
+	SetNoSaveCvarString("8bdm_wepActor", wepActor);
+	SetNoSaveCvarString("8bdm_wepIcon", wepIcon);
+	SetNoSaveCvarString("8bdm_wepAmmo", wepAmmo);
+	SetNoSaveCvarInt("8bdm_wepMult", wepMult);
+	SetNoSaveCvarString("8bdm_wepAmmo2", wepAmmo2);
+	SetNoSaveCvarInt("8bdm_wepMult2", wepMult2);
+	SetNoSaveCvarInt("8bdm_wepSlot", wepSlot);
+	SetNoSaveCvarInt("8bdm_wepMap", wepMap);
+	SetNoSaveCvarInt("8bdm_wepLms", wepLms);
+	SetNoSaveCvarInt("8bdm_wepEddie", wepEddie);
+	return ACS_NamedExecuteWithResult("core_DefineWeapon_S");
+}
+// ==========================================================================================================================
+// Defines bar and body color swaps =========================================================================================
+// -- Examples of its use in CORECOL.acs
+
+function int DTADD_UnpackByte1(int x) { return (x>>24) & 0x000000FF; }
+function int DTADD_UnpackByte2(int x) { return (x>>16) & 0x000000FF; }
+function int DTADD_UnpackByte3(int x) { return (x>>8)  & 0x000000FF; }
+function bool isRGB(int x) { return ((x>>0)  & 0x000000FF) == 0; }
+
+// just pretend these are overloaded functions that accept int or rgbTriplet
+function int CreatePlayerTranslation(int id, int cyan, int blue) {
+	if(isRGB(cyan) && isRGB(blue)) {
+		CreateTranslation(id, 
+			192:192=[DTADD_UnpackByte1(cyan), DTADD_UnpackByte2(cyan), DTADD_UnpackByte3(cyan)]:[DTADD_UnpackByte1(cyan), DTADD_UnpackByte2(cyan), DTADD_UnpackByte3(cyan)], 
+			198:198=[DTADD_UnpackByte1(blue), DTADD_UnpackByte2(blue), DTADD_UnpackByte3(blue)]:[DTADD_UnpackByte1(blue), DTADD_UnpackByte2(blue), DTADD_UnpackByte3(blue)]
+		);
+	} else if (isRGB(cyan)) {
+		CreateTranslation(id, 
+			192:192=[DTADD_UnpackByte1(cyan), DTADD_UnpackByte2(cyan), DTADD_UnpackByte3(cyan)]:[DTADD_UnpackByte1(cyan), DTADD_UnpackByte2(cyan), DTADD_UnpackByte3(cyan)], 
+			198:198=blue:blue
+		);
+	} else if (isRGB(blue)) {
+		CreateTranslation(id, 
+			192:192=cyan:cyan, 
+			198:198=[DTADD_UnpackByte1(blue), DTADD_UnpackByte2(blue), DTADD_UnpackByte3(blue)]:[DTADD_UnpackByte1(blue), DTADD_UnpackByte2(blue), DTADD_UnpackByte3(blue)]
+		);
+	} else {
+		CreateTranslation(id, 
+			192:192=cyan:cyan, 
+			198:198=blue:blue
+		);
+	}
+	return DefineTranslation(id);
+}
+
+function int CreatePlayerTranslationGlow(int id, int cyan, int blue, int black) {
+	if(isRGB(cyan) && isRGB(blue) && isRGB(black)) {
+		CreateTranslation(id, 
+			192:192=[DTADD_UnpackByte1(cyan), DTADD_UnpackByte2(cyan), DTADD_UnpackByte3(cyan)]:[DTADD_UnpackByte1(cyan), DTADD_UnpackByte2(cyan), DTADD_UnpackByte3(cyan)], 
+			198:198=[DTADD_UnpackByte1(blue), DTADD_UnpackByte2(blue), DTADD_UnpackByte3(blue)]:[DTADD_UnpackByte1(blue), DTADD_UnpackByte2(blue), DTADD_UnpackByte3(blue)],
+			0:2=[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)]:[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)],
+			5:8=[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)]:[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)],
+			243:247=[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)]:[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)]
+		);
+	} else if (isRGB(cyan) && isRGB(blue)) {
+		CreateTranslation(id, 
+			192:192=[DTADD_UnpackByte1(cyan), DTADD_UnpackByte2(cyan), DTADD_UnpackByte3(cyan)]:[DTADD_UnpackByte1(cyan), DTADD_UnpackByte2(cyan), DTADD_UnpackByte3(cyan)], 
+			198:198=[DTADD_UnpackByte1(blue), DTADD_UnpackByte2(blue), DTADD_UnpackByte3(blue)]:[DTADD_UnpackByte1(blue), DTADD_UnpackByte2(blue), DTADD_UnpackByte3(blue)],
+			0:2=black:black,
+			5:8=black:black,
+			243:247=black:black
+		);
+	} else if (isRGB(blue) && isRGB(black)) {
+		CreateTranslation(id, 
+			192:192=cyan:cyan, 
+			198:198=[DTADD_UnpackByte1(blue), DTADD_UnpackByte2(blue), DTADD_UnpackByte3(blue)]:[DTADD_UnpackByte1(blue), DTADD_UnpackByte2(blue), DTADD_UnpackByte3(blue)],
+			0:2=[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)]:[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)],
+			5:8=[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)]:[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)],
+			243:247=[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)]:[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)]
+		);
+	} else if (isRGB(cyan) && isRGB(black)) {
+		CreateTranslation(id, 
+			192:192=[DTADD_UnpackByte1(cyan), DTADD_UnpackByte2(cyan), DTADD_UnpackByte3(cyan)]:[DTADD_UnpackByte1(cyan), DTADD_UnpackByte2(cyan), DTADD_UnpackByte3(cyan)], 
+			198:198=blue:blue,
+			0:2=[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)]:[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)],
+			5:8=[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)]:[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)],
+			243:247=[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)]:[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)]
+		);
+	} else if (isRGB(cyan)) {
+		CreateTranslation(id, 
+			192:192=[DTADD_UnpackByte1(cyan), DTADD_UnpackByte2(cyan), DTADD_UnpackByte3(cyan)]:[DTADD_UnpackByte1(cyan), DTADD_UnpackByte2(cyan), DTADD_UnpackByte3(cyan)], 
+			198:198=blue:blue,
+			0:2=black:black,
+			5:8=black:black,
+			243:247=black:black
+		);
+	} else if (isRGB(blue)) {
+		CreateTranslation(id, 
+			192:192=cyan:cyan, 
+			198:198=[DTADD_UnpackByte1(blue), DTADD_UnpackByte2(blue), DTADD_UnpackByte3(blue)]:[DTADD_UnpackByte1(blue), DTADD_UnpackByte2(blue), DTADD_UnpackByte3(blue)],
+			0:2=black:black,
+			5:8=black:black,
+			243:247=black:black
+		);
+	} else if (isRGB(black)) {
+		CreateTranslation(id, 
+			192:192=cyan:cyan, 
+			198:198=blue:blue,
+			0:2=[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)]:[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)],
+			5:8=[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)]:[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)],
+			243:247=[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)]:[DTADD_UnpackByte1(black), DTADD_UnpackByte2(black), DTADD_UnpackByte3(black)]
+		);
+	} else {
+		CreateTranslation(id, 
+			192:192=cyan:cyan, 
+			198:198=blue:blue,
+			0:2=black:black,
+			5:8=black:black,
+			243:247=black:black
+		);
+	}
+	return DefineTranslation(id);
+}
+
+// Includes used for team color definitions
+#DEFINE DTADD_COLOR_LIGHTER 1
+#DEFINE DTADD_COLOR_SECONDARY 2
+#DEFINE DTADD_COLOR_PRIMARY 3
+#DEFINE DTADD_COLOR_DARK 4
+
+function int GrabTeamRGBTriplet(int team, int col) {
+	return ACS_NamedExecuteWithResult("core_getteamRGB",team,col);
+}
+
+// ==========================================================================================================================
+// Defines a script to be called that creates team colors ===================================================================
+// -- Examples: CORECHRG.acs
+
+function int RegisterTeamColorDef(str callee) {
+	SetNoSaveCvarString("8bdm_teamcolor_def", callee);
+	return ACS_NamedExecuteWithResult("core_RegisterTeamColorDef_S");
+}
+
+// ==========================================================================================================================
+// Defines a reserved translation for debug =================================================================================
+
+function int DefineTranslation(int id) {
+	SetNoSaveCvarInt("8bdmtranslation_id",id);
+	return ACS_NamedExecuteWithResult("core_DefineTranslation_S");
+}
+
+// ==========================================================================================================================
+// Assist display definitions, used for displaying special bars and temporary effects =======================================
+// -- Examples: COREAST.acs and COREBAR.acs
+
+function void DefineAssistDisplay(str name) {
+	SetNoSaveCvarString("8bdmassistdisplay_name",name);
+	ACS_NamedExecuteWithResult("core_DefineAssistDisplay_S");
+}
+
+// ==========================================================================================================================
+// Defines Buster Upgrades ==================================================================================================
+// -- Examples: COREBUS.acs
+
+function int DefineBusterUpgradeAndTake(str busterTag, str busterActor, str busterUpgradeTag, str busterUpgrade, str busterIcon, bool busterMapValid, bool busterLMSValid, bool busterEddieValid) {
+	int ret = DefineBusterUpgrade(busterTag, busterActor, busterUpgradeTag, busterUpgrade, busterIcon, busterMapValid, busterLMSValid, busterEddieValid);
+	DefineBusterTake(busterActor);
+	return ret;
+}
+
+function int DefineBusterUpgrade(str busterTag, str busterActor, str busterUpgradeTag, str busterUpgrade, str busterIcon, bool busterMapValid, bool busterLMSValid, bool busterEddieValid) {
+	SetNoSaveCvarString("8bdm_busterTag", busterTag);
+	SetNoSaveCvarString("8bdm_busterActor", busterActor);
+	SetNoSaveCvarString("8bdm_busterUpgradeTag", busterUpgradeTag);
+	SetNoSaveCvarString("8bdm_busterUpgrade", busterUpgrade);
+	SetNoSaveCvarString("8bdm_busterIcon", busterIcon);
+	SetNoSaveCvarInt("8bdm_busterMapValid", busterMapValid);
+	SetNoSaveCvarInt("8bdm_busterLMSValid", busterLMSValid);
+	SetNoSaveCvarInt("8bdm_busterEddieValid", busterEddieValid);
+	return ACS_NamedExecuteWithResult("core_DefineBusterUpgrade_S");
+}
+
+function int DefineBusterTake(str bustertake) {
+	SetNoSaveCvarString("8bdm_bustertake",bustertake); //code name of buster
+	return ACS_NamedExecuteWithResult("core_DefineBusterTake_S");
+}
+
+// ==========================================================================================================================
+// Defines a powerup for actor properties ===================================================================================
+
+#define DTADD_CAPROP_AirJumpZ 64
+#define DTADD_CAPROP_WallJumpZ 65
+
+function int DefinePowerAprop(str giver, str powerUp, int property, int factor, int permanent) {
+	SetNoSaveCvarString("8bdmpoweraprop_giver", giver);
+	SetNoSaveCvarString("8bdmpoweraprop_powerUp", powerUp);
+	SetNoSaveCvarInt("8bdmpoweraprop_property", property);
+	SetNoSaveCvarInt("8bdmpoweraprop_factor", factor);
+	SetNoSaveCvarInt("8bdmpoweraprop_permanent", permanent);
+    return ACS_NamedExecuteWithResult("core_DefinePowerAprop_S");
+}
+
+// ==========================================================================================================================
+// Defines a spawn func for various items ===================================================================================
+
+#define DTADD_SFT_WEP 0
+#define DTADD_SFT_ITEM 1
+#define DTADD_SFT_PARTYBALL 2
+#define DTADD_SFT_FLAG 3
+#define DTADD_SFT_PROJ 4
+#define DTADD_SFT_PROJCLIENT 5
+#define DTADD_SFT_PILLAR 6
+
+function int AddSpawnFunc(int type, str name) {
+	SetNoSaveCvarInt("8bdmspawnfunc_type", type);
+	SetNoSaveCvarString("8bdmspawnfunc_name", name);
+    return ACS_NamedExecuteWithResult("core_DefineSpawnFunc_S");
+}
+
+// ==========================================================================================================================
+// Defines a pickup func for an artifact ====================================================================================
+
+#define DTADD_PFT_TERMINATOR 0
+#define DTADD_PFT_POSSESSION 1
+
+function int AddArtifactPickupFunc(int type, str name) {
+	SetNoSaveCvarInt("8bdmpickupfunc_type", type);
+	SetNoSaveCvarString("8bdmpickupfunc_name", name);
+    return ACS_NamedExecuteWithResult("core_DefineArtifactPickupFunc_S");
+}
+
+
+// ==========================================================================================================================
+// Defines a reserved TID range =============================================================================================
+
+function void DefineReservedTID(int tid) {
+    ACS_NamedExecuteWithResult("core_DefineReservedTID_S", tid, tid);
+}
+
+function void DefineReservedTIDRange(int tid, int tidMax) {
+    ACS_NamedExecuteWithResult("core_DefineReservedTID_S", tid, tidMax);
+}
+
+// ==========================================================================================================================
+// Defines an entry for the TRAINING map ====================================================================================  
+
+function int RegisterTrainingDef(str callee) {
+	SetNoSaveCvarString("8bdm_training_def", callee);
+	return ACS_NamedExecuteWithResult("core_RegisterTrainingDef_S");
+}
+
+#define DTADD_TRAINING_MEGABUSTER -1 // Appears first always
+#define DTADD_TRAINING_WEP 0         // Appears after Mega Buster
+#define DTADD_TRAINING_BUSTER 1      // Appears after weapons
+#define DTADD_TRAINING_ITEM 2        // Appears in its separate category
+
+function int DefineTrainingEntry(int type, str tag, str desc, str icon, str actor) {
+	return DefineTrainingEntryUpdated("", type, tag, desc, icon, actor);
+}
+
+function int DefineTrainingEntryUpdated(str version, int type, str tag, str desc, str icon, str actor) {
+	return DefineTrainingItemUpdated(version, type, tag, desc, icon, actor, 1);
+}
+
+function int DefineTrainingItem(int type, str tag, str desc, str icon, str actor, int amount) {
+	return DefineTrainingItemUpdated("", type, tag, desc, icon, actor, amount);
+}
+
+function int DefineTrainingItemUpdated(str version, int type, str tag, str desc, str icon, str actor, int amount) {
+	SetNoSaveCvarString("8bdm_training_version", version);
+	SetNoSaveCvarInt("8bdm_training_type", type);
+	SetNoSaveCvarString("8bdm_training_tag", tag);
+	SetNoSaveCvarString("8bdm_training_desc", desc);
+	SetNoSaveCvarString("8bdm_training_icon", icon);
+	SetNoSaveCvarString("8bdm_training_actor", actor);
+	SetNoSaveCvarInt("8bdm_training_amount", amount);
+	return ACS_NamedExecuteWithResult("core_DefineTrainingEntry_S");
+}
+
+// ==========================================================================================================================
+// Item definitions, used for item grouping and info grabbing ===============================================================
+// String:  Tag         - The item's language tag, or its proper name (Ex. "TAG_EDDIE" or "Eddie")
+// String:  Actor       - The actor's class name. (Ex. "EddieSummon")
+// String:  Icon        - The icon's spawn sprite. (Ex. "WEAPQ0")
+// Int:     Amount      - How many are obtained upon pickup?
+// Int:     Group       - The item's group
+// Bool:    MapValid    - Can you pick this item up from maps?
+// -- Examples of use of this function in COREITEM.acs 
+
+#define DTADD_GRP_JUMP 0
+#define DTADD_GRP_DASH 1
+#define DTADD_GRP_FLIGHT 2
+#define DTADD_GRP_WEAPON 3
+#define DTADD_GRP_GIFT 4
+#define DTADD_GRP_ATTACK 5
+#define DTADD_GRP_ESCAPE 6
+#define DTADD_GRP_HEAL 7
+#define DTADD_GRP_RELOAD 8
+#define DTADD_GRP_FULLRESTORE 9
+#define DTADD_GRP_PASSIVE 10
+
+function int DefineAssistItem(str itemTag, str itemActor, str itemIcon, int itemAmount, int itemGroup, int itemMap)
+{
+	SetNoSaveCvarString("8bdm_itemTag", itemTag);
+	SetNoSaveCvarString("8bdm_itemActor", itemActor);
+	SetNoSaveCvarString("8bdm_itemIcon", itemIcon);
+	SetNoSaveCvarInt("8bdm_itemAmount", itemAmount);
+	SetNoSaveCvarInt("8bdm_itemGroup", itemGroup);
+	SetNoSaveCvarInt("8bdm_itemMap", itemMap);
+	return ACS_NamedExecuteWithResult("core_DefineAssistItem_S");
+}

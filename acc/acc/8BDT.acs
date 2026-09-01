@@ -1,0 +1,817 @@
+// CORE8BDT: Vanilla's copy of the library file. Do not edit or compile unless you are overwriting it.
+// 8BDT: The importable version that can be used in mods. Can remove whatever you aren't using from this file.
+//
+#library "CORE8BDT"
+
+#include "zcommon.acs"
+#include "8BDMMATH.acs"
+
+#define MAX_PLAYERS_DT 64
+
+// Weapon definitions, used for ammo and weapon management ==================================================================
+// String:  Tag         - The weapon's language tag, or its proper name (Ex. "TAG_ROLLINGCUTTER" or "Rolling Cutter")
+// String:  Actor       - The weapon's class name. (Ex. "RollingCutterWep")
+// String:  Icon        - The weapon's spawn sprite. (Ex. "WEA2F0")
+// String:  AmmoType    - The weapon's ammo class name. (Ex. "RollingCutterAmmo")
+// Fixed:   AmmoFactor  - The weapon's ammo collection rate. (1.0 for normal, bigger number for faster ammo regen, smaller number for slower ammo regen)
+// String:  Ammo2Type   - The weapon's ammo2 class name. (Ex. "RollingCutterAmmo")
+// Fixed:   Ammo2Factor - The weapon's ammo2 collection rate. (1.0 for normal, bigger number for faster ammo regen, smaller number for slower ammo regen)
+// Int:     Slot        - The weapon's slot, should match the actor definiton.
+// Bool:    MapValid    - Can you pick this weapon up from maps?
+// Bool:    LMSValid    - Can you get this weapon from the LMS rotation?
+// Bool:    EddieValid  - Can you get this weapon from Eddie?
+// 
+#LIBDEFINE MAX_WEAPONS_GLOBAL_LIMIT 1000
+int MAX_WEAPONS_GLOBAL = 0;
+str weapons_ammo_str[MAX_WEAPONS_GLOBAL_LIMIT][5];
+int weapons_ammo_int[MAX_WEAPONS_GLOBAL_LIMIT][6];
+int weapons_slot_count[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+function int findWeaponByActor(str actor)
+{
+    int res = -1;
+	for(int i = 0; i < MAX_WEAPONS_GLOBAL && res == -1; i++)
+    {
+        if(StrICmp(actor, getWeaponActor(i)) == 0) {
+            res = i;
+        }
+    }
+    return res;
+}
+function int randomWeapon(void) { return randomWeaponEx(-1, -1, -1, -1); }
+function int randomWeaponSlot(int slot) { return randomWeaponEx(slot, -1, -1, -1); }
+function int randomWeaponEx(int slot, int mapValid, int LMSValid, int eddieValid) { return ACS_NamedExecuteWithResult("core_RandomWeapon_S", slot, mapValid, LMSValid, eddieValid); }
+function int getWeaponSlotCount(int slot) { return weapons_slot_count[slot]; }
+
+function str getWeaponTag(int idx) { return weapons_ammo_str[idx][0]; }
+function str getWeaponActor(int idx) { return weapons_ammo_str[idx][1]; }
+function str getWeaponIcon(int idx) { return weapons_ammo_str[idx][2]; }
+function str getWeaponAmmoType(int idx) { return weapons_ammo_str[idx][3]; }
+function int getWeaponAmmoFactor(int idx) { return weapons_ammo_int[idx][0]; }
+function str getWeaponAmmo2Type(int idx) { return weapons_ammo_str[idx][4]; }
+function int getWeaponAmmo2Factor(int idx) { return weapons_ammo_int[idx][1]; }
+function int getWeaponSlot(int idx) { return weapons_ammo_int[idx][2]; }
+function int isWeaponMapValid(int idx) { return weapons_ammo_int[idx][3]; }
+function int isWeaponLMSValid(int idx) { return weapons_ammo_int[idx][4]; }
+function int isWeaponEddieValid(int idx) { return weapons_ammo_int[idx][5]; }
+
+function void setWeaponTag(int idx, str val) { weapons_ammo_str[idx][0] = val; }
+function void setWeaponActor(int idx, str val) { weapons_ammo_str[idx][1] = val; }
+function void setWeaponIcon(int idx, str val) { weapons_ammo_str[idx][2] = val; }
+function void setWeaponAmmoType(int idx, str val) { weapons_ammo_str[idx][3] = val; }
+function void setWeaponAmmoFactor(int idx, int val) { weapons_ammo_int[idx][0] = val; }
+function void setWeaponAmmo2Type(int idx, str val) { weapons_ammo_str[idx][4] = val; }
+function void setWeaponAmmo2Factor(int idx, int val) { weapons_ammo_int[idx][1] = val; }
+function void setWeaponSlot(int idx, int val) { weapons_ammo_int[idx][2] = clamp(val, 0, 9); }
+function void setWeaponMapValid(int idx, int val) { weapons_ammo_int[idx][3] = intToBool(val); }
+function void setWeaponLMSValid(int idx, int val) { weapons_ammo_int[idx][4] = intToBool(val); }
+function void setWeaponEddieValid(int idx, int val) { weapons_ammo_int[idx][5] = intToBool(val); }
+// 
+// ==========================================================================================================================
+// Translation definitions, used for debug purposes =========================================================================
+// Int:  Id      - Translation ID being used
+// 
+#LIBDEFINE MAX_TRANS_LIMIT 1500
+int MAX_TRANS = 0;
+int TRANS_LOWEST = 0;
+int TRANS_HIGHEST = 0;
+int trans_list[MAX_TRANS_LIMIT];
+
+function int getTransId(int idx) { return trans_list[idx]; }
+function void setTransId(int idx, int val) { trans_list[idx] = val; }
+// 
+// ==========================================================================================================================
+// Assist display definitions, used for displaying special bars and temporary effects =======================================
+// String:  Assist      - Script name for the assist display
+// 
+#LIBDEFINE MAX_ASSISTD_LIMIT 200
+int MAX_ASSISTD = 0;
+str assist_displays[MAX_ASSISTD_LIMIT];
+
+function int findAssistByScript(str scr)
+{
+    int res = -1;
+	for(int i = 0; i < MAX_ASSISTD && res == -1; i++)
+    {
+        if(StrICmp(scr, getAssistScript(i)) == 0) {
+            res = i;
+        }
+    }
+    return res;
+}
+
+function str getAssistScript(int idx) { return assist_displays[idx]; }
+
+function void setAssistScript(int idx, str val) { assist_displays[idx] = val; }
+// 
+// ==========================================================================================================================
+// Buster upgrade definitions, used for all buster upgrades =================================================================
+// String:  Tag         - The buster's language tag, or its proper name (Ex. "TAG_PROTOBUSTER" or "Proto Buster")
+// String:  Actor       - Actor name of the buster weapon. (Ex. ProtoBuster)
+// String:  Upgrade Tag - The buster upgrade's language tag, 
+// String:  Upgrade     - Actor name of the buster upgrade pickup. (Ex. ProtoUpgrade)
+// String:  Icon        - The weapon's spawn sprite. (Ex. "WEA2Q0")
+// Bool:    MapValid    - Can you pick this weapon up from maps?
+// Bool:    LMSValid    - Can you get this buster up in LMS?
+// Bool:    EddieValid  - Can you get this buster upgrade from Eddie?
+//
+#LIBDEFINE MAX_BUSTER_LIMIT 100
+int MAX_BUSTERUPGRADES = 0;
+str BusterUpgrades[MAX_BUSTER_LIMIT][5];
+bool BusterUpgrades_Valid[MAX_BUSTER_LIMIT][3];
+
+function int findBusterUpgradeByActor(str act)
+{
+    int res = -1;
+	for(int i = 0; i < MAX_BUSTERUPGRADES && res == -1; i++)
+    {
+        if(StrICmp(act, getBusterActor(i)) == 0) {
+            res = i;
+        }
+    }
+    return res;
+}
+
+function int findBusterUpgradeByUpgrade(str upgrade)
+{
+    int res = -1;
+	for(int i = 0; i < MAX_BUSTERUPGRADES && res == -1; i++)
+    {
+        if(StrICmp(upgrade, getBusterUpgrade(i)) == 0) {
+            res = i;
+        }
+    }
+    return res;
+}
+
+function int randomBusterUpgrade(void) { return randomBusterUpgradeEx(-1, -1, -1); }
+function int randomBusterUpgradeEx(int mapValid, int LMSValid, int eddieValid) { return ACS_NamedExecuteWithResult("core_RandomBusterUpgrade_S", mapValid, LMSValid, eddieValid); }
+
+function str getBusterTag(int idx) { return BusterUpgrades[idx][0]; }
+function str getBusterActor(int idx) { return BusterUpgrades[idx][1]; }
+function str getBusterUpgradeTag(int idx) { return BusterUpgrades[idx][2]; }
+function str getBusterUpgrade(int idx) { return BusterUpgrades[idx][3]; }
+function str getBusterIcon(int idx) { return BusterUpgrades[idx][4]; }
+function bool isBusterMapValid(int idx) { return BusterUpgrades_Valid[idx][0]; }
+function bool isBusterLMSValid(int idx) { return BusterUpgrades_Valid[idx][1]; }
+function bool isBusterEddieValid(int idx) { return BusterUpgrades_Valid[idx][2]; }
+
+function void setBusterTag(int idx, str val) { BusterUpgrades[idx][0] = val; }
+function void setBusterActor(int idx, str val) { BusterUpgrades[idx][1] = val; }
+function void setBusterUpgradeTag(int idx, str val) { BusterUpgrades[idx][2] = val; }
+function void setBusterUpgrade(int idx, str val) { BusterUpgrades[idx][3] = val; }
+function void setBusterIcon(int idx, str val) { BusterUpgrades[idx][4] = val; }
+function void setBusterMapValid(int idx, bool val) { BusterUpgrades_Valid[idx][0] = intToBool(val); }
+function void setBusterLMSValid(int idx, bool val) { BusterUpgrades_Valid[idx][1] = intToBool(val); }
+function void setBusterEddieValid(int idx, bool val) { BusterUpgrades_Valid[idx][2] = intToBool(val); }
+// 
+// String:  Buster      - Actor name of the buster to be taken when an upgrade is used (Ex. MegaBuster)
+// 
+int MAX_BUSTERTAKES = 0;
+str BusterTakes[MAX_BUSTER_LIMIT];
+
+function int findBusterTakeByBuster(str take)
+{
+    int res = -1;
+	for(int i = 0; i < MAX_BUSTERTAKES && res == -1; i++)
+    {
+        if(StrICmp(take, getBusterTake(i)) == 0) {
+            res = i;
+        }
+    }
+    return res;
+}
+
+function str getBusterTake(int idx) { return BusterTakes[idx]; }
+
+function void setBusterTake(int idx, str val) { BusterTakes[idx] = val; }
+// 
+// ==========================================================================================================================
+// Water sector definitions =================================================================================================
+// Int:     Tag         - Sector tag of the water applied
+//
+#LIBDEFINE SECTOR_LOWEST    -32768.0
+#LIBDEFINE SECTOR_HIGHEST   32768.0
+#LIBDEFINE GLOBAL_WATER_TID -9999
+#LIBDEFINE MAX_WATER_GLOBAL_LIMIT 128
+int MAX_WATER_GLOBAL = 0;
+int WaterSectors[MAX_WATER_GLOBAL_LIMIT];
+
+function int findWaterByTag(int tag)
+{
+    int res = -1;
+	for(int i = 0; i < MAX_WATER_GLOBAL && res == -1; i++)
+    {
+        if(tag == getWaterTag(i)) {
+            res = i;
+        }
+    }
+    return res;
+}
+function bool isZPosInWaterTag(int tag, int zPos)
+{
+    switch(GetUserVariable(tag, "user_direction")) {
+        default: case 0: return zPos < GetActorZ(tag); // water builds down
+        case 1: return zPos >= GetActorZ(tag); // water builds up
+        case 2: return zPos < GetActorCeilingZ(tag) && zPos >= GetActorFloorZ(tag); // water fills sector
+    }
+    return false;
+}
+function int getWaterTopZ(int tag) 
+{
+    switch(GetUserVariable(tag, "user_direction")) {
+        default: case 0: return GetActorZ(tag); // water builds down
+        case 1: return SECTOR_HIGHEST; // water builds up
+        case 2: return GetActorCeilingZ(tag); // water fills sector
+    }
+    return SECTOR_HIGHEST;
+}
+function int getWaterBottomZ(int tag) 
+{
+    switch(GetUserVariable(tag, "user_direction")) {
+        default: case 0: return SECTOR_LOWEST; // water builds down
+        case 1: return GetActorZ(tag); // water builds up
+        case 2: return GetActorFloorZ(tag); // water fills sector
+    }
+    return SECTOR_LOWEST;
+}
+function int findActorWater(int tid)
+{
+    if(tid == 0)
+        return 0;
+    if(ThingCountName("MM8BDM_Water", GLOBAL_WATER_TID))
+        return GLOBAL_WATER_TID;
+    for(int i = 0; i < MAX_WATER_GLOBAL; i++)
+    {
+        if(ThingCountSector(T_NONE, tid, getWaterTag(i)) == 1)
+        {
+            return getWaterTag(i);
+        }
+    }
+    return 0;
+}
+
+function int getWaterTag(int idx) { return WaterSectors[idx]; }
+
+function void setWaterTag(int idx, int val) { WaterSectors[idx] = val; }
+//
+// ==========================================================================================================================
+// Gel sector definitions ===================================================================================================
+// Int:     Tag         - Sector tag of the gel applied
+//
+#LIBDEFINE GLOBAL_GEL_TID -9998
+#LIBDEFINE MAX_GEL_GLOBAL_LIMIT 128
+int MAX_GEL_GLOBAL = 0;
+int GelSectors[MAX_GEL_GLOBAL_LIMIT];
+
+function int findGelByTag(int tag)
+{
+    int res = -1;
+	for(int i = 0; i < MAX_GEL_GLOBAL && res == -1; i++)
+    {
+        if(tag == getGelTag(i)) {
+            res = i;
+        }
+    }
+    return res;
+}
+function bool isZPosInGelTag(int tag, int zPos)
+{
+    return zPos < GetActorZ(tag);
+}
+function int findActorGel(int tid)
+{
+    if(tid == 0)
+        return 0;
+    if(ThingCountName("MM8BDM_Gel", GLOBAL_GEL_TID))
+        return GLOBAL_GEL_TID;
+    for(int i = 0; i < MAX_GEL_GLOBAL; i++)
+    {
+        if(ThingCountSector(T_NONE, tid, getGelTag(i)) == 1)
+        {
+            return getGelTag(i);
+        }
+    }
+    return 0;
+}
+
+function int getGelTag(int idx) { return GelSectors[idx]; }
+
+function void setGelTag(int idx, int val) { GelSectors[idx] = val; }
+//
+// ==========================================================================================================================
+// Pit sector definitions ===================================================================================================
+// Int:     Tag         - Sector tag of the pit applied
+// Int:     MoD         - Means of death of the sector
+// Int:     3D Tag      - Target sector of this pit's 3D floor controller (Default 0)
+// Int:     Damage amt  - How much damage to deal (Default 256) 
+// Int:     Damage inr  - How often to deal damage (Default 0)
+//
+#LIBDEFINE MAX_PIT_GLOBAL_LIMIT 128
+int MAX_PIT_GLOBAL = 0;
+bool inrActive;
+int PitSectors[MAX_PIT_GLOBAL_LIMIT][5];
+
+function int findPitByTagAndTag3d(int tag, int tag3d)
+{
+	for(int i = 0; i < MAX_PIT_GLOBAL; i++)
+	{
+		if(getPitTag(i) == tag && getPitTag3d(i) == tag3d)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+function int findPitByTag(int tag)
+{
+	for(int i = 0; i < MAX_PIT_GLOBAL; i++)
+	{
+		if (getPitTag(i) == tag) {
+            return i;
+        }
+	}
+
+	return -1;
+}
+
+function bool checkPit(void)
+{
+    return checkPitByTID(0);
+}
+
+function bool checkPitByTID(int tid)
+{
+    return getPitByTID(tid) != -1;
+}
+
+function int getPit(void) {
+    return getPitByTID(0);
+}
+
+function int getPitByTID(int tid)
+{
+    if(tid == 0) {
+        tid = ActivatorTID();
+    }
+    int newTID = tid;
+
+	// Ensure activator has a unique TID before running pit checks.
+	if(newTID == 0 || ThingCount(T_NONE, newTID) > 1)
+	{
+        newTID = UniqueTID();
+		Thing_ChangeTID(tid, newTID);
+	}
+
+	int groundPit = getGroundPitsByTID(newTID);
+    int thirddPit = get3dPitsByTID(newTID);
+
+    int res = -1;
+    if (groundPit != -1) {
+        res = groundPit;
+    } else if (thirddPit != -1) {
+        res = thirddPit;
+    }
+
+	// Revert the TID if it was changed.
+	if(tid != newTID)
+	{
+		Thing_ChangeTID(newTID, tid);
+	}
+
+	return res;
+}
+
+function int getGroundPitsByTID(int tid)
+{
+	int x = GetActorX(tid) >> 16;
+	int y = GetActorY(tid) >> 16;
+
+	for(int i = 0; i < MAX_PIT_GLOBAL; i++)
+	{
+		int tag = getPitTag(i);
+		bool inSector = ThingCountSector(T_NONE, tid, tag) > 0;
+
+		if(inSector)
+		{
+			if(GetActorFloorZ(tid) == GetSectorFloorZ(0, x, y))
+			{
+				return i;
+			}
+		}
+	}
+
+	return -1;
+}
+
+function int get3dPitsByTID(int tid)
+{
+	int x = GetActorX(tid) >> 16;
+	int y = GetActorY(tid) >> 16;
+
+	for(int i = 0; i < MAX_PIT_GLOBAL; i++)
+	{
+		int tag3d = getPitTag3d(i);
+		int tag = getPitTag(i);
+		bool inSector = tag3d != 0 && ThingCountSector(T_NONE, tid, tag3d) > 0;
+
+		if(inSector)
+		{
+			int sCeiling = GetSectorCeilingZ(tag, x, y);
+			int pFloorZ = GetActorFloorZ(tid);
+			int pFeetZ = GetActorZ(tid);
+			
+			if(pFloorZ == sCeiling)
+				return i;
+			
+			if(pFloorZ < sCeiling && pFeetZ > sCeiling)
+				return i;
+		}
+	}
+
+	return -1;
+}
+
+function int getPitTag(int idx) { return PitSectors[idx][0]; }
+function int getPitMod(int idx) { return PitSectors[idx][1]; }
+function int getPitTag3d(int idx) { return PitSectors[idx][2]; }
+function int getPitDamage(int idx) { return PitSectors[idx][3]; }
+function int getPitInterval(int idx) { return PitSectors[idx][4]; }
+
+function void setPitTag(int idx, int tag) { PitSectors[idx][0] = tag; }
+function void setPitMod(int idx, int mod) { PitSectors[idx][1] = mod; }
+function void setPitTag3d(int idx, int tag3d) { PitSectors[idx][2] = tag3d; }
+function void setPitDamage(int idx, int dmg) { PitSectors[idx][3] = dmg; }
+function void setPitInterval(int idx, int inr) { 
+	if(!inrActive && inr > 0) {
+		inrActive = true;
+	}
+	PitSectors[idx][4] = inr;
+}
+
+//
+// ==========================================================================================================================
+// Aprop Powerup Definitions ================================================================================================
+// String:  Giver       - Trigger item for the Aprop Powerup
+// String:  Powerup     - Actual Powerup to track
+// Int:     Property    - Actor property (specified as a constant starting with APROP_) that is manipulated
+// Fixed:   Factor      - Factor to multiply the given property by
+// Bool:    Permanent   - Whether or not the powerup is permanent
+//
+#LIBDEFINE MAX_POWER_PROPERTY_LIMIT 1000
+int MAX_POWER_PROPERTY = 0;
+#LIBDEFINE MAX_PROPS 9
+#LIBDEFINE MAX_CAPROPS 2
+
+#define CAPROP_AirJumpZ_DT 64
+#define CAPROP_WallJumpZ_DT 65
+
+int Supported_Props[MAX_PROPS] = {
+    APROP_JumpZ,
+    APROP_Gravity,
+    APROP_Alpha,
+    APROP_Speed,
+    APROP_ScaleX,
+    APROP_ScaleY,
+    APROP_Friction,
+    CAPROP_AirJumpZ_DT,
+    CAPROP_WallJumpZ_DT
+};
+
+int DefaultProperties[MAX_PLAYERS_DT][MAX_PROPS];
+int CustomActorProperties[MAX_PLAYERS_DT][MAX_CAPROPS];
+
+str PowerProperty[MAX_POWER_PROPERTY_LIMIT][2];
+int PowerProperty_Value[MAX_POWER_PROPERTY_LIMIT][3];
+
+function int findPowerApropByGiver(str act)
+{
+    int res = -1;
+	for(int i = 0; i < MAX_POWER_PROPERTY && res == -1; i++)
+    {
+        if(StrICmp(act, getPowerApropGiver(i)) == 0) {
+            res = i;
+        }
+    }
+    return res;
+}
+
+function int getPropertyFromIndex(int idx) { return Supported_Props[idx]; }
+function int getPropertyIndex(int prop) {
+    for(int i = 0; i < MAX_PROPS; i++) {
+        if(Supported_Props[i] == prop) {
+            return i;
+        }
+    }
+    return -1;
+}
+function int getPlayerDefaultProperty(int pln, int prop) {
+    int idx = getPropertyIndex(prop);
+
+    if(idx == -1) {
+        printbold(s:"Failed to fetch property for \"\cg", i:prop, s:"\c-\": Unsupported Actor Property.");
+        return -1;
+    }
+
+    return DefaultProperties[pln][idx];
+}
+function void setPlayerDefaultProperty(int pln, int prop, int val) {
+    int idx = getPropertyIndex(prop);
+
+    if(idx == -1) {
+        printbold(s:"Failed to fetch property for \"\cg", i:prop, s:"\c-\": Unsupported Actor Property.");
+        return;
+    }
+
+    DefaultProperties[pln][idx] = val;
+}
+
+function str getPowerApropGiver(int idx) { return PowerProperty[idx][0]; }
+function str getPowerApropPowerUp(int idx) { return PowerProperty[idx][1]; }
+function int getPowerApropProperty(int idx) { return PowerProperty_Value[idx][0]; }
+function int getPowerApropFactor(int idx) { return PowerProperty_Value[idx][1]; }
+function int isPowerApropPermanent(int idx) { return PowerProperty_Value[idx][2]; }
+
+function void setPowerApropGiver(int idx, str val) { PowerProperty[idx][0] = val; }
+function void setPowerApropPowerUp(int idx, str val) { PowerProperty[idx][1] = val; }
+function void setPowerApropProperty(int idx, int val) { PowerProperty_Value[idx][0] = val; }
+function void setPowerApropFactor(int idx, int val) { 
+    if (getPowerApropProperty(idx) == APROP_Alpha) {
+        PowerProperty_Value[idx][1] = clamp(val, 0.0, 1.0);
+    } else {
+        PowerProperty_Value[idx][1] = val; 
+    }
+}
+function void setPowerApropPermanent(int idx, int val) { PowerProperty_Value[idx][2] = intToBool(val); }
+
+// 
+// ==========================================================================================================================
+// Spawn Functions ==========================================================================================================
+// This is just several arrays that contain the ACS scripts run by items tied to said arrays.
+//
+#LIBDEFINE MAX_SPAWNFUNC_LIMIT 50
+
+str SpawnFuncs_Table[7][MAX_SPAWNFUNC_LIMIT];
+int SpawnFuncs_Max[7];
+
+function str getSpawnFunc(int type, int idx) { return SpawnFuncs_Table[type][idx]; }
+function void setSpawnFunc(int type, int idx, str name) { SpawnFuncs_Table[type][idx] = name; }
+
+// 
+// ==========================================================================================================================
+// Artifact pickup Functions ================================================================================================
+// Two arrays that detail scripts to run whenever picking up Terminator and Possession artifacts.
+//
+#LIBDEFINE MAX_ARTIPICKUPFUNC_LIMIT 25
+
+str ArtiPickupFuncs_Table[2][MAX_ARTIPICKUPFUNC_LIMIT];
+int ArtiPickupFuncs_Max[2];
+
+function str getArtifactPickupFunc(int type, int idx) { return ArtiPickupFuncs_Table[type][idx]; }
+function void setArtifactPickupFunc(int type, int idx, str name) { ArtiPickupFuncs_Table[type][idx] = name; }
+
+// 
+// ==========================================================================================================================
+// TID reservations, used for UniqueTID() wrapper and debug purposes ========================================================
+// Int:  TIDRangeMin    - TID being reserved for some use
+// Int:  TIDRangeMax    - Upper limit on TID range reserved
+// 
+#LIBDEFINE MAX_TID_LIMIT 1000
+int MAX_TID = 0;
+int TID_LOWEST = 0;
+int TID_HIGHEST = 0;
+int TID_list[MAX_TID_LIMIT][2];
+
+function int getTIDRangeMin(int idx) { return TID_list[idx][0]; }
+function int getTIDRangeMax(int idx) { return TID_list[idx][1]; }
+function void setTIDRange(int idx, int val, int valMax) { TID_list[idx][0] = val; TID_list[idx][1] = valMax;}
+
+function int findTID(int key) {
+    if(key < TID_LOWEST || key > TID_HIGHEST) {return -1;}
+
+    for(int i = 0; i < MAX_TID; i++) {
+        if(getTIDRangeMin(i) <= key && key <= getTIDRangeMax(i)) {return i;}
+    }
+
+    return -1;
+}
+
+// 
+// ==========================================================================================================================
+// TRAINING entries, used to add weapons, busters, and items to TRAINING ====================================================
+// Str:  versionUpdated   - Version updated if recently updated, otherwise empty string
+// Str:  entryName        - Entry tag, giving full name
+// Str:  entryDesc        - Entry description, giving a non-line broken description of the entry
+// Str:  entryIcon        - Entry icon, giving the icon graphic of the entry
+// Str:  entryActor       - Actor to give for the entry
+// Str:  itemAmount       - Amount of an item to give
+// 
+#LIBDEFINE MAX_TRAIN_DEF_LIMIT 50
+int MAX_TRAIN_DEF = 0;
+str TRAINING_def_list[MAX_TRAIN_DEF_LIMIT];
+
+function str getTrainingDef(int idx) { return TRAINING_def_list[idx]; }
+function void setTrainingDef(int idx, str val) { TRAINING_def_list[idx] = val; }
+
+#LIBDEFINE MAX_TRAIN_MB_LIMIT 100
+#LIBDEFINE MAX_TRAIN_WEP_LIMIT 1000
+#LIBDEFINE MAX_TRAIN_BUST_LIMIT 100
+#LIBDEFINE MAX_TRAIN_ITEM_LIMIT 100
+int MAX_TRAIN_MB = 0;
+int MAX_TRAIN_WEP = 0;
+int MAX_TRAIN_BUST = 0;
+int MAX_TRAIN_ITEM = 0;
+str TRAINING_MB_list[MAX_TRAIN_MB_LIMIT][5];
+str TRAINING_wep_list[MAX_TRAIN_WEP_LIMIT][5];
+str TRAINING_bust_list[MAX_TRAIN_BUST_LIMIT][5];
+str TRAINING_item_list[MAX_TRAIN_ITEM_LIMIT][6];
+
+function int modifyTrainingIndex(int idx, int amount, int maxVal, int minVal) {
+    idx += amount;
+    if (idx > maxVal) {
+        return minVal;
+    } else if (idx < minVal) {
+        return maxVal;
+    }
+    return idx;
+}
+
+function str getMBVersionUpdated(int idx) { return TRAINING_MB_list[idx][0]; }
+function str getMBName(int idx) { return TRAINING_MB_list[idx][1]; }
+function str getMBDesc(int idx) { return TRAINING_MB_list[idx][2]; }
+function str getMBIcon(int idx) { return TRAINING_MB_list[idx][3]; }
+function str getMBActor(int idx) { return TRAINING_MB_list[idx][4]; }
+
+function void setMBVersionUpdated(int idx, str val) { TRAINING_MB_list[idx][0] = val; }
+function void setMBName(int idx, str val) { TRAINING_MB_list[idx][1] = val; }
+function void setMBDesc(int idx, str val) { TRAINING_MB_list[idx][2] = val; }
+function void setMBIcon(int idx, str val) { TRAINING_MB_list[idx][3] = val; }
+function void setMBActor(int idx, str val) { TRAINING_MB_list[idx][4] = val; }
+
+function str getWepVersionUpdated(int idx) { return TRAINING_wep_list[idx][0]; }
+function str getWepName(int idx) { return TRAINING_wep_list[idx][1]; }
+function str getWepDesc(int idx) { return TRAINING_wep_list[idx][2]; }
+function str getWepIcon(int idx) { return TRAINING_wep_list[idx][3]; }
+function str getWepActor(int idx) { return TRAINING_wep_list[idx][4]; }
+
+function void setWepVersionUpdated(int idx, str val) { TRAINING_wep_list[idx][0] = val; }
+function void setWepName(int idx, str val) { TRAINING_wep_list[idx][1] = val; }
+function void setWepDesc(int idx, str val) { TRAINING_wep_list[idx][2] = val; }
+function void setWepIcon(int idx, str val) { TRAINING_wep_list[idx][3] = val; }
+function void setWepActor(int idx, str val) { TRAINING_wep_list[idx][4] = val; }
+
+function str getBustVersionUpdated(int idx) { return TRAINING_bust_list[idx][0]; }
+function str getBustName(int idx) { return TRAINING_bust_list[idx][1]; }
+function str getBustDesc(int idx) { return TRAINING_bust_list[idx][2]; }
+function str getBustIcon(int idx) { return TRAINING_bust_list[idx][3]; }
+function str getBustActor(int idx) { return TRAINING_bust_list[idx][4]; }
+
+function void setBustVersionUpdated(int idx, str val) { TRAINING_bust_list[idx][0] = val; }
+function void setBustName(int idx, str val) { TRAINING_bust_list[idx][1] = val; }
+function void setBustDesc(int idx, str val) { TRAINING_bust_list[idx][2] = val; }
+function void setBustIcon(int idx, str val) { TRAINING_bust_list[idx][3] = val; }
+function void setBustActor(int idx, str val) { TRAINING_bust_list[idx][4] = val; }
+
+function str getItemVersionUpdated(int idx) { return TRAINING_item_list[idx][0]; }
+function str getItemName(int idx) { return TRAINING_item_list[idx][1]; }
+function str getItemDesc(int idx) { return TRAINING_item_list[idx][2]; }
+function str getItemIcon(int idx) { return TRAINING_item_list[idx][3]; }
+function str getItemActor(int idx) { return TRAINING_item_list[idx][4]; }
+function int getItemAmount(int idx) { return TRAINING_item_list[idx][5]; }
+
+function void setItemVersionUpdated(int idx, str val) { TRAINING_item_list[idx][0] = val; }
+function void setItemName(int idx, str val) { TRAINING_item_list[idx][1] = val; }
+function void setItemDesc(int idx, str val) { TRAINING_item_list[idx][2] = val; }
+function void setItemIcon(int idx, str val) { TRAINING_item_list[idx][3] = val; }
+function void setItemActor(int idx, str val) { TRAINING_item_list[idx][4] = val; }
+function void setItemAmount(int idx, int val) { TRAINING_item_list[idx][5] = val; }
+
+function str getTrainingWeaponsVersion(int idx) {
+    if(idx <= MAX_TRAIN_MB - 1) {
+        return getMBVersionUpdated(idx);
+    } 
+    idx -= MAX_TRAIN_MB;
+    if (idx <= MAX_TRAIN_WEP - 1) {
+        return getWepVersionUpdated(idx);
+    } 
+    idx -= MAX_TRAIN_WEP;
+    return getBustVersionUpdated(idx);
+}
+
+function str getTrainingWeaponsName(int idx) {
+    if(idx <= MAX_TRAIN_MB - 1) {
+        return getMBName(idx);
+    } 
+    idx -= MAX_TRAIN_MB;
+    if (idx <= MAX_TRAIN_WEP - 1) {
+        return getWepName(idx);
+    } 
+    idx -= MAX_TRAIN_WEP;
+    return getBustName(idx);
+}
+
+function str getTrainingWeaponsDesc(int idx) {
+    if(idx <= MAX_TRAIN_MB - 1) {
+        return getMBDesc(idx);
+    } 
+    idx -= MAX_TRAIN_MB;
+    if (idx <= MAX_TRAIN_WEP - 1) {
+        return getWepDesc(idx);
+    } 
+    idx -= MAX_TRAIN_WEP;
+    return getBustDesc(idx);
+}
+
+function str getTrainingWeaponsIcon(int idx) {
+    if(idx <= MAX_TRAIN_MB - 1) {
+        return getMBIcon(idx);
+    } 
+    idx -= MAX_TRAIN_MB;
+    if (idx <= MAX_TRAIN_WEP - 1) {
+        return getWepIcon(idx);
+    } 
+    idx -= MAX_TRAIN_WEP;
+    return getBustIcon(idx);
+}
+
+function str getTrainingWeaponsActor(int idx) {
+    if(idx <= MAX_TRAIN_MB - 1) {
+        return getMBActor(idx);
+    }  
+    idx -= MAX_TRAIN_MB;
+    if (idx <= MAX_TRAIN_WEP - 1) {
+        return getWepActor(idx);
+    } 
+    idx -= MAX_TRAIN_WEP;
+    return getBustActor(idx);
+}
+
+function str getTrainingWeaponsType(int idx) {
+    if(idx <= MAX_TRAIN_MB - 1) {
+        return 0;
+    }  
+    idx -= MAX_TRAIN_MB;
+    if (idx <= MAX_TRAIN_WEP - 1) {
+        return 1;
+    } 
+    idx -= MAX_TRAIN_WEP;
+    return 2;
+}
+// 
+// ==========================================================================================================================
+// Assist item definitions, used for item grouping and info grabbing ========================================================
+// String:  Tag         - The item's language tag, or its proper name (Ex. "TAG_EDDIE" or "Eddie")
+// String:  Actor       - The actor's class name. (Ex. "EddieSummon")
+// String:  Icon        - The icon's spawn sprite. (Ex. "WEAPQ0")
+// Int:     Amount      - How many are obtained upon pickup?
+// Int:     Group       - The item's group
+// Bool:    MapValid    - Can you pick this item up from maps?
+// 
+#LIBDEFINE MAX_ITEMS_GLOBAL_LIMIT 100
+int MAX_ITEMS_GLOBAL = 0;
+str items_def_str[MAX_ITEMS_GLOBAL_LIMIT][3];
+int items_def_int[MAX_ITEMS_GLOBAL_LIMIT][3];
+int items_group_count[11] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+function int findAssistItemByActor(str actor)
+{
+    int res = -1;
+	for(int i = 0; i < MAX_ITEMS_GLOBAL && res == -1; i++)
+    {
+        if(StrICmp(actor, getAssistItemActor(i)) == 0) {
+            res = i;
+        }
+    }
+    return res;
+}
+function int randomAssistItem(void) { return randomAssistItemEx(-1, -1); }
+function int randomAssistItemGroup(int group) { return randomAssistItemEx(group, -1); }
+function int randomAssistItemEx(int group, int mapValid) { return ACS_NamedExecuteWithResult("core_RandomAssistItem_S", group, mapValid); }
+function int getAssistItemGroupCount(int group) { return items_group_count[group]; }
+
+function str getAssistItemTag(int idx) { return items_def_str[idx][0]; }
+function str getAssistItemActor(int idx) { return items_def_str[idx][1]; }
+function str getAssistItemIcon(int idx) { return items_def_str[idx][2]; }
+function int getAssistItemAmount(int idx) { return items_def_int[idx][0]; }
+function int getAssistItemGroup(int idx) { return items_def_int[idx][1]; }
+function int isAssistItemMapValid(int idx) { return items_def_int[idx][2]; }
+
+function void setAssistItemTag(int idx, str val) { items_def_str[idx][0] = val; }
+function void setAssistItemActor(int idx, str val) { items_def_str[idx][1] = val; }
+function void setAssistItemIcon(int idx, str val) { items_def_str[idx][2] = val; }
+function void setAssistItemAmount(int idx, int val) { items_def_int[idx][0] = val; }
+function void setAssistItemGroup(int idx, int val) { items_def_int[idx][1] = clamp(val, 0, 10); }
+function void setAssistItemMapValid(int idx, int val) { items_def_int[idx][2] = intToBool(val); }
+// 
+// ==========================================================================================================================
+// Team Color Definition Functions ==========================================================================================
+// This is just an array with a list of scripts to call to properly define all team colors
+//
+#LIBDEFINE MAX_TEAMCOLOR_DEF_LIMIT 100
+int MAX_TEAMCOLOR_DEF = 0;
+
+str TeamColorDefs_Table[MAX_TEAMCOLOR_DEF_LIMIT];
+
+function str getTeamColorDef(int idx) { return TeamColorDefs_Table[idx]; }
+function void setTeamColorDef(int idx, str name) { TeamColorDefs_Table[idx] = name; }

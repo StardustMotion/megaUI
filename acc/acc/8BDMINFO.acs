@@ -1,0 +1,85 @@
+// Info functions for MM8BDM
+// These functions all obtain information from the game state (Game Mode, actors, etc)
+// Include zcommon.acs and 8BDMDEFS.acs before this.
+
+// [Russ] Gets the absolute maximum number of players in the server.
+global int 4: infMaxPlrs;
+function int GetMaxPlayers(void)
+{
+	return infMaxPlrs;
+}
+
+// [Mess] Remaining Lives for LMS boss music
+Function int LivesLeft (int p)
+{
+	//If(ACS_NamedExecuteWithResult("core_checkmode") != 2){Return 1;}
+	Return((GetPlayerLivesLeft(p)) + (GetActorProperty(p+1000, APROP_HEALTH) > 0));
+}
+
+// [Mess] Function to determine the closest player
+function int ClosestPlayer (int max_distance)
+{
+	int LowestDistance=max_distance;
+	int ClosestPlayerTID;
+	int CurrentDistance;
+	int FiringPlayer=ACS_NamedExecuteWithResult("core_gettarget");
+	for(int h=0; h < MAX_PLAYERS; h++)
+		{
+		if(PlayerInGame(h) && h+1000 != FiringPlayer && h+1000 != ActivatorTID())
+			{
+			CurrentDistance = xyzdistance(ActivatorTID(), h+1000);
+				If(LowestDistance==0){LowestDistance=CurrentDistance;ClosestPlayerTID=h+1000;}
+				If(CurrentDistance < LowestDistance)
+				{
+				LowestDistance=CurrentDistance;
+				ClosestPlayerTID=h+1000;
+				}
+			}
+		}
+	Return ClosestPlayerTID;
+}
+
+// Distance measuring functions
+function int xyzDistance (int tid1, int tid2)
+{
+	int x, y, z, d;
+	x = GetActorX(tid1) - GetActorX(tid2);
+	y = GetActorY(tid1) - GetActorY(tid2);
+	z = GetActorZ(tid1) - GetActorZ(tid2);
+	d = VectorLength(VectorLength(x, y), z) >> 16;
+	return d;
+}
+
+function int xyDistance (int tid1, int tid2)
+{
+	int x, y, d;
+	x = GetActorX(tid1) - GetActorX(tid2);
+	y = GetActorY(tid1) - GetActorY(tid2);
+	d = VectorLength(x, y) >> 16;
+	return d;
+}
+
+function int zdistance (int tid1, int tid2)
+{
+	int z;
+	z = GetActorZ(tid1) - GetActorZ(tid2) >> 16;
+	return z;
+}
+
+// Finds the pitch between two given actors
+Function int VectorPitch (Int TID1, Int TID2, int ZAdjust)
+{
+	If(ZAdjust != 0){ZAdjust = ZAdjust << 16;}
+	Return(VectorAngle(xydistance(TID1, TID2)<<16,GetActorZ(TID1)-(GetActorZ(TID2)-ZAdjust)));
+}
+
+// Checks for the existence of a given uservar on an actor
+// Useful for making custom actor flags
+function bool CheckForVar(str theVar) {
+	return CheckForActorVar(0, theVar);
+}
+
+function bool CheckForActorVar(int tid, str theVar) {
+	SetUserVariable(tid,theVar,1);
+	return (GetUserVariable(tid,theVar)==1);
+}

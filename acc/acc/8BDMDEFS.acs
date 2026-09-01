@@ -1,0 +1,520 @@
+// Constants defined here are used by multiple files.
+
+// Cooperative mode checks
+#define TEAM_NONE -1
+#define TEAM_COOP -2
+
+// Team IDs
+#define TEAM_LIGHT 0
+#define TEAM_WILY 1
+#define TEAM_COSSACK 2
+#define TEAM_KING 3
+
+// TID offsets (based on PlayerNumber())
+#define PLN_TID 1000
+#define PLN_TARGETPOINT 1100
+#define PLN_RESPAWN 2000
+#define PLN_EXITUNITIMAGE 3000
+#define PLN_EDDIETEMP 3100 // Unused
+#define PLN_EXITUNITPOINT 4000
+
+// Total max player count overall
+#define MAX_PLAYERS 64
+
+// Sticky Lift constants
+#define STICKYMODE_GUTSLIFT	0
+#define STICKYMODE_MAGFLY	1
+
+// Weapon slots
+#define SLOT_0      0
+#define SLOT_BUSTER 1
+#define SLOT_RANGED 2
+#define SLOT_RAPID  3
+#define SLOT_CLOSE  4
+#define SLOT_POWER  5
+#define SLOT_AOE    6
+#define SLOT_SHIELD 7
+#define SLOT_8      8
+#define SLOT_9      9
+
+// Weapon Colors
+// Note: Going above 999 is going to screw up translations used for boss battles (police/doc robots/gamma etc)
+#define CLR_MEGABUSTER 97
+#define CLR_BUBBLELEAD 1
+#define CLR_LEAFSHIELD 2
+#define CLR_ATOMICFIRE 3
+#define CLR_SHADOWBLADE 4
+#define CLR_NAPALMBOMB 5
+#define CLR_AIRSHOOTER 6
+#define CLR_HYPERBOMB 7
+#define CLR_MAGNETMISSILE 8
+#define CLR_TOPSPIN 9
+#define CLR_NEEDLECANNON 10
+#define CLR_GEMINILASER 11
+#define CLR_SEARCHSNAKE 12
+#define CLR_TIMESTOPPER 13
+#define CLR_SUPERARM 14
+#define CLR_ICESLASHER 15
+#define CLR_THUNDERBEAM 16
+#define CLR_METALBLADE 17
+#define CLR_HARDKNUCKLE 18
+#define CLR_DRILLBOMB 19
+#define CLR_BLIZZARDATTACK 20
+#define CLR_FIRESTORM 21
+#define CLR_QUICKBOOMERANG 22
+#define CLR_CRASHBOMB 23
+#define CLR_CHARGEKICK 24
+#define CLR_ROLLINGCUTTER 25
+#define CLR_SPARKSHOCK 26
+#define CLR_RINGBOOMERANG 27
+#define CLR_GYROATTACK 28
+#define CLR_POWERSTONE 29
+#define CLR_DUSTCRUSHER 30
+#define CLR_PHARAOHSHOT 31
+#define CLR_WATERWAVE 32
+#define CLR_CRYSTALEYE 33
+#define CLR_SKULLBARRIER 34
+#define CLR_FLAMEBLAST 35
+#define CLR_PROTOBUSTER 36
+#define CLR_YAMATOSPEAR 37
+#define CLR_DIVEMISSILE 38
+#define CLR_PLANTBARRIER 39
+#define CLR_SILVERTOMAHAWK 40
+#define CLR_WINDSTORM 41
+#define CLR_KNIGHTCRUSH 42
+#define CLR_STARCRASH 43
+#define CLR_RAINFLUSH 44
+#define CLR_SAKUGARNE 45
+#define CLR_BASSBUSTER 46
+#define CLR_BALLADECRACKER 47
+#define CLR_SCREWCRUSHER 48
+#define CLR_FLASHSTOPPER 49
+#define CLR_GRAVITYHOLD 50
+#define CLR_CENTAURFLASH 51
+#define CLR_MIRRORBUSTER 52
+
+#define CLR_BALLADEREAL 53
+
+#define CLR_ATOMICFIRECRG1 60
+#define CLR_ATOMICFIRECRG2 61
+#define CLR_ATOMICFIRECRG3 62
+
+#define CLR_PROTOCHARGE1 63
+#define CLR_PROTOCHARGE2 64
+
+#define CLR_ENKERCHARGE1 65
+#define CLR_ENKERCHARGE2 66
+
+#define CLR_METALMANREAL 67
+
+#define CLR_BOSSPAIN 68
+
+#define CLR_FREEZECRACKER 54
+#define CLR_NOISECRUSH 55
+#define CLR_THUNDERBOLT 56
+#define CLR_JUNKSHIELD 57
+#define CLR_WILDCOIL 58
+#define CLR_SCORCHWHEEL 59
+#define CLR_SLASHCLAW 69
+#define CLR_DANGERWRAP 70
+
+#define CLR_NOISECRUSHCRG1 71
+#define CLR_NOISECRUSHCRG2 72
+#define CLR_NOISECRUSHCRG3 73
+
+#define CLR_WILDCOILCRG1 74
+#define CLR_WILDCOILCRG2 75
+#define CLR_WILDCOILCRG3 76
+
+#define CLR_SUPERADAPTOR 77
+#define CLR_SUPERADAPTORCRG1 78
+#define CLR_SUPERADAPTORCRG2 79
+#define CLR_SUPERADAPTORCRG3 80
+
+#define CLR_FLAMESWORD 81
+#define CLR_ICEWAVE 82
+#define CLR_THUNDERCLAW 83
+#define CLR_WATERBALLOON 84
+#define CLR_TORNADOHOLD 85
+#define CLR_FLASHBOMB 86
+#define CLR_ASTROCRUSH 87
+#define CLR_HOMINGSNIPER 88
+
+#define CLR_HOMINGCHRG1 89
+#define CLR_HOMINGCHRG2 90
+#define CLR_HOMINGCHRG3 91
+
+#define CLR_MEGACHARGE1 92
+#define CLR_MEGACHARGE2 93
+#define CLR_MEGACHARGE3 94
+
+#define CLR_OILSLIDER 95
+#define CLR_TIMESLOW 96
+
+#define CLR_MEGABALL 100
+
+#define CLR_DUOFIST 101
+#define CLR_DUOCHARGE1 102
+#define CLR_DUOCHARGE2 103
+#define CLR_DUOCHARGE3 104
+
+#define CLR_ICEDEATH 105
+
+#define CLR_LASERCHARGE1 106
+#define CLR_LASERCHARGE2 107
+
+#define CLR_TENGUBLADE 170
+#define CLR_WAVEBURNER 171
+#define CLR_SPREADDRILL 172
+#define CLR_MAGICCARD 173
+#define CLR_REMOTEMINE 174
+#define CLR_COPYVISION 175
+#define CLR_ICEWALL 176
+#define CLR_LIGHTNINGBOLT 177
+#define CLR_TREBLEBOOST 178
+
+// Bass colors
+#define CLR_TENGUBLADEB 179
+#define CLR_WAVEBURNERB 180
+#define CLR_SPREADDRILLB 181
+#define CLR_MAGICCARDB 182
+#define CLR_REMOTEMINEB 183
+#define CLR_COPYVISIONB 184
+#define CLR_ICEWALLB 185
+#define CLR_LIGHTNINGBOLTB 186
+
+#define CLR_PLUGBALL 187
+#define CLR_LASERTRIDENT 188
+#define CLR_TORNADOBLOW 189
+#define CLR_JEWELSATELLITE 190
+#define CLR_MAGMABAZOOKA 191
+#define CLR_MAGMACHARGE1 192
+#define CLR_MAGMACHARGE2 193
+#define CLR_CONCRETESHOT 194
+#define CLR_CONCRETEDAMAGE 195
+#define CLR_BLACKHOLEBOMB 196
+#define CLR_HORNETCHASER 197
+
+#define CLR_SOLARBLAZE 198
+#define CLR_WHEELCUTTER 199
+#define CLR_REBOUNDSTRIKER 200
+#define CLR_THUNDERWOOL 201
+#define CLR_COMMANDOBOMB 202
+#define CLR_CHILLSPIKE 203
+#define CLR_WATERSHIELD 204
+#define CLR_TRIPLEBLADE 205
+
+#define CLR_GRABBUSTER 206
+#define CLR_BUBBLEBOMB 207
+#define CLR_PHOTONMISSILE 208
+#define CLR_SALTWATER 209
+#define CLR_ELECTRICSHOCK 210
+#define CLR_BLACKHOLE 211
+#define CLR_DEEPDIGGER 212
+#define CLR_BREAKDASH 213
+#define CLR_BREAKDASHCHARGE1 214
+#define CLR_BREAKDASHCHARGE2 215
+#define CLR_BREAKDASHCHARGE3 216
+#define CLR_SPARKCHASER 217
+#define CLR_MEGAARMCHARGE1 221
+#define CLR_MEGAARMCHARGE2 222
+#define CLR_MEGAARMCHARGE3 223
+#define CLR_MEGAARMCHARGE4 224
+#define CLR_MEGAARMCHARGE5 225
+#define CLR_MEGAARMCHARGE6 226
+
+#define CLR_ENKERCHARGE3 227
+#define CLR_ENKERCHARGE4 228
+#define CLR_ENKERCHARGE5 229
+//skips to 234 because of team colors being 230-233
+#define CLR_ENKERCHARGE6 234
+#define CLR_ENKERCHARGE7 235
+
+#define CLR_DAWNBREAKER 236
+#define CLR_DAWNBREAKERCHARGE1 237
+#define CLR_DAWNBREAKERCHARGE2 238
+#define CLR_DAWNBREAKERCHARGE3 239
+
+// Misc Character Colors
+#define CLR_CPROTO 710
+#define CLR_CBASS 711
+#define CLR_ROLL 712
+
+#define CLR_CUTMAN 720
+#define CLR_GUTSMAN 721
+#define CLR_ICEMAN 722
+#define CLR_BOMBMAN 723
+#define CLR_FIREMAN 724
+#define CLR_ELECMAN 725
+#define CLR_TIMEMAN 726
+#define CLR_OILMAN 727
+
+#define CLR_METALMAN 740
+#define CLR_AIRMAN 741
+#define CLR_BUBBLEMAN 742
+#define CLR_QUICKMAN 743
+#define CLR_CRASHMAN 744
+#define CLR_FLASHMAN 745
+#define CLR_HEATMAN 746
+#define CLR_WOODMAN 747
+#define CLR_DRWILYC 748
+#define CLR_DRWILYCSUIT 749
+#define CLR_DRWILYCAPSULEF 750
+#define CLR_DRWILYCAPSULEI 751
+
+#define CLR_ALIEN 755
+
+#define CLR_NEEDLEMAN 760
+#define CLR_MAGNETMAN 761
+#define CLR_GEMINIMAN 762
+#define CLR_HARDMAN 763
+#define CLR_TOPMAN 764
+#define CLR_SNAKEMAN 765
+#define CLR_SPARKMAN 766
+#define CLR_SHADOWMAN 767
+#define CLR_DOCROBOT 768
+
+#define CLR_BRIGHTMAN 780
+#define CLR_TOADMAN 781
+#define CLR_DRILLMAN 782
+#define CLR_PHARAOHMAN 783
+#define CLR_RINGMAN 784
+#define CLR_DUSTMAN 785
+#define CLR_DIVEMAN 786
+#define CLR_SKULLMAN 787
+
+#define CLR_GRAVITYMAN 800
+#define CLR_WAVEMAN 801
+#define CLR_STONEMAN 802
+#define CLR_GYROMAN 803
+#define CLR_STARMAN 804
+#define CLR_CHARGEMAN 805
+#define CLR_NAPALMMAN 806
+#define CLR_CRYSTALMAN 807
+#define CLR_DARKMAN1 808
+#define CLR_DARKMAN2 809
+#define CLR_DARKMAN3 810
+#define CLR_DARKMAN4 811
+#define CLR_GRAVITYMANFLIP 814
+#define CLR_CHARGEMANHOT 815
+
+#define CLR_BLIZZARDMAN 820
+#define CLR_CENTAURMAN 821
+#define CLR_FLAMEMAN 822
+#define CLR_KNIGHTMAN 823
+#define CLR_PLANTMAN 824
+#define CLR_TOMAHAWKMAN 825
+#define CLR_WINDMAN 826
+#define CLR_YAMATOMAN 827
+
+#define CLR_FREEZEMAN 840
+#define CLR_JUNKMAN 841
+#define CLR_BURSTMAN 842
+#define CLR_CLOUDMAN 843
+#define CLR_SPRINGMAN 844
+#define CLR_SLASHMAN 845
+#define CLR_SHADEMAN 846
+#define CLR_TURBOMAN 847
+
+#define CLR_SHADECHARGE1 850
+#define CLR_SHADECHARGE2 851
+
+#define CLR_TENGUMAN 860
+#define CLR_ASTROMAN 861
+#define CLR_SWORDMAN 862
+#define CLR_CLOWNMAN 863
+#define CLR_SEARCHMAN 864
+#define CLR_FROSTMAN 865
+#define CLR_GRENADEMAN 866
+#define CLR_AQUAMAN 867
+#define CLR_ORIGINDUO 868
+#define CLR_EVILROBOT 869
+
+#define CLR_CONCRETEMAN 880
+#define CLR_TORNADOMAN 881
+#define CLR_SPLASHWOMAN 882
+#define CLR_PLUGMAN 883
+#define CLR_JEWELMAN 884
+#define CLR_HORNETMAN 885
+#define CLR_MAGMAMAN 886
+#define CLR_GALAXYMAN 887
+#define CLR_GALAXYMAN1 890
+#define CLR_GALAXYMAN2 891
+#define CLR_GALAXYMAN3 892
+#define CLR_GALAXYMAN4 893
+#define CLR_GALAXYMAN5 894
+#define CLR_GALAXYMAN6 895
+#define CLR_GALAXYMAN7 896
+
+#define CLR_BLADEMAN 900
+#define CLR_PUMPMAN 901
+#define CLR_COMMANDOMAN 902
+#define CLR_CHILLMAN 903
+#define CLR_SHEEPMAN 904
+#define CLR_STRIKEMAN 905
+#define CLR_NITROMAN 906
+#define CLR_SOLARMAN 907
+
+#define CLR_DYNAMOMAN 922
+#define CLR_COLDMAN 923
+#define CLR_GROUNDMAN 924
+#define CLR_PIRATEMAN 925
+#define CLR_BURNERMAN 926
+#define CLR_MAGICMAN 927
+#define CLR_KINGMAN 928
+
+#define CLR_BUSTERRODG 940
+#define CLR_MEGAWATERS 941
+#define CLR_HYPERSTORMH 942
+#define CLR_ENKER 943
+#define CLR_PUNK 944
+#define CLR_BALLADE 945
+#define CLR_QUINT 946
+#define CLR_BRGCOPY 950
+#define CLR_MWSCOPY 951
+#define CLR_HSHCOPY 952
+
+#define CLR_TERRA 960
+#define CLR_MERCURY 961
+#define CLR_VENUS 962
+#define CLR_MARS 963
+#define CLR_JUPITER 964
+#define CLR_SATURN 965
+#define CLR_URANUS 966
+#define CLR_PLUTO 967
+#define CLR_NEPTUNE 968
+#define CLR_SUNSTAR 969
+
+#define CLR_POSSESSION 980
+#define CLR_POSSESSION_L 981
+#define CLR_POSSESSION_D 982
+
+// Team Colors ----------------------------------------------------
+// When creating Team charge colors, specify each one as (at least)
+// FOUR SPACES APART.
+//
+// This is because the team translation system automatically maps the 
+// charge colors from the starting value to all four team color sets
+// (Light, Wily, Cossack, King)
+#define TCLR_NONE 0
+#define TCLR_DEFAULT 230
+#define TCLR_CHARGE1 250
+#define TCLR_CHARGE2 254
+#define TCLR_CHARGE3 258
+#define TCLR_MEGAARM_CHARGE1 262
+#define TCLR_MEGAARM_CHARGE2 266
+#define TCLR_MEGAARM_CHARGE3 270
+#define TCLR_MEGAARM_CHARGE4 274
+#define TCLR_MEGAARM_CHARGE5 278
+#define TCLR_MEGAARM_CHARGE6 282
+#define TCLR_ATOMICFIRE_CHARGE1 286
+#define TCLR_ATOMICFIRE_CHARGE2 290
+#define TCLR_ATOMICFIRE_CHARGE3 294
+#define TCLR_PROTO_CHARGE1 298
+#define TCLR_PROTO_CHARGE2 302
+#define TCLR_MIRROR_CHARGE1 306
+#define TCLR_MIRROR_CHARGE2 310
+#define TCLR_MIRROR_CHARGE3 314
+#define TCLR_MIRROR_CHARGE4 318
+#define TCLR_MIRROR_CHARGE5 322
+#define TCLR_MIRROR_CHARGE6 326
+#define TCLR_MIRROR_CHARGE7 330
+#define TCLR_ICEDEATH 334
+#define TCLR_POSSESSION 338
+#define TCLR_POSSESSION_L 342
+#define TCLR_POSSESSION_D 346
+
+// Projectile team colors -----------------------------------------
+// Very ill-advised to modify these unless you know what you are
+// doing!
+#define PCLR_TEAMPROJ 3000
+#define PCLR_TEAMPROJ_WHITES 3100
+#define PCLR_TEAMPROJ_BLACKS 3200
+#define PCLR_TEAMPROJ_ALL 3300
+
+// Flags and special colors for core_weaponcolor and core_chargecolor ----
+#define CLRF_SILENT 1<<0
+
+#define CLR_PREVCOLOR -1
+
+// Flags for core_respawnspot --------------------------------------------
+#define RS_NORM 0 // Teleport to a random player spawn
+#define RS_SAMETEAM 1 // Teleport to a random player spawn for the same team
+#define RS_ARTITELEPORT 2 // Teleport to the floor below any player spawn
+
+// Custom player properties for AProp system
+#define CAPROP_AirJumpZ 64
+#define CAPROP_WallJumpZ 65
+
+// Flags for core_runeplayer ---------------------------------------------
+#define RUNE_STRENGTH 0
+#define RUNE_RAGE 1
+#define RUNE_DRAIN 2
+#define RUNE_SPREAD 3
+#define RUNE_RESISTANCE 4
+#define RUNE_REGENERATION 5
+#define RUNE_PROSPERITY 6
+#define RUNE_REFLECTION 7
+#define RUNE_HIGHJUMP 8
+#define RUNE_HASTE 9
+
+// Flags for core_airjumpplayer and core_walljumpplayer ------------------
+#define JUMPP_ADDSUB 0
+#define JUMPP_INFINITE 1
+#define JUMPP_DISABLE 2
+
+// Flags for core_unsolidplayer ------------------------------------------
+#define USP_TOGGLEON 1           // Desolidifier
+#define USP_TOGGLEOFF_DAMAGE 0   // Resolidifier, take damage on fail.
+#define USP_TOGGLEOFF_KILL 2     // Resolidifier, kill on fail.
+#define USP_TOGGLEOFF_TELEPORT 3 // Resolidifier, teleport you on fail.
+#define USP_TOGGLEOFF_NONE 4     // Resolidifier, do nothing on fail
+
+// Constants for Team Translations ---------------------------------------
+#define COLOR_LIGHTER 1
+#define COLOR_SECONDARY 2
+#define COLOR_PRIMARY 3
+#define COLOR_DARK 4
+
+// Constants for core_bossmusicstate -------------------------------------
+#define BMSF_GETSTATE 0
+#define BMSF_SETVAL 1
+#define BMSF_SETVALMUS 2
+#define BMSF_GETINTENSE 3
+#define BMSF_SETINTENSE 4
+
+#define BMS_STAGE 0
+#define BMS_BOSS 1
+#define BMS_VICTORY 2
+
+// Constants for SpawnFuncs ----------------------------------------------
+#define SFT_WEP 0
+#define SFT_ITEM 1
+#define SFT_PARTYBALL 2
+#define SFT_FLAG 3
+#define SFT_PROJ 4
+#define SFT_PROJCLIENT 5
+#define SFT_PILLAR 6
+
+// Constants for Artifact PickupFuncs ------------------------------------
+#define PFT_TERMINATOR 0
+#define PFT_POSSESSION 1
+
+// Constants for TRAINING defs -------------------------------------------
+#define TRAINING_MEGABUSTER -1 // Appears first always
+#define TRAINING_WEP 0         // Appears after Mega Buster
+#define TRAINING_BUSTER 1      // Appears after weapons
+#define TRAINING_ITEM 2        // Appears in its separate category
+
+// Item groups -----------------------------------------------------------
+#define GRP_JUMP 0
+#define GRP_DASH 1
+#define GRP_FLIGHT 2
+#define GRP_WEAPON 3
+#define GRP_GIFT 4
+#define GRP_ATTACK 5
+#define GRP_ESCAPE 6
+#define GRP_HEAL 7
+#define GRP_RELOAD 8
+#define GRP_FULLRESTORE 9
+#define GRP_PASSIVE 10
