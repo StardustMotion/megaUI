@@ -160,7 +160,7 @@ script "MegaUI Mouse Menu" (void) CLIENTSIDE {
         int x = MGUI_Roundf(GetMouseX()*MGUI_HUD_WIDTH)>>16,
             y = MGUI_Roundf(GetMouseY()*MGUI_HUD_HEIGHT)>>16;
         if(MGUI_DEBUG)
-            Draw(area == MGUI_AREA_NULL ? "MGUIDBG2" : "MGUIDBG3", x, y, MGUI_HUD_WIDTH, MGUI_HUD_HEIGHT, 1.0);
+            Draw(area == MGUI_AREA_NULL ? "MEGAUI_1" : "MEGAUI_2", x, y, MGUI_HUD_WIDTH, MGUI_HUD_HEIGHT, 1.0);
         Draw(mguiMouseGraphic,  x+(mguiMouseOffset & 0xFFFF), y + (mguiMouseOffset >> 16), MGUI_HUD_WIDTH, MGUI_HUD_HEIGHT, 1.0);
 
         // Fetch current hovered area
@@ -279,7 +279,7 @@ function void MGUI_SetMouseArea(int areaId, int x, int y, int width, int height,
     mguiMouseAreaY2[slot] = FixedDiv((y+height)<<16,hudHeight<<16);
     if(MGUI_DEBUG) {
         Crop(x, y, width, height, hudWidth);
-        Show(MGUI_DEBUG_AREA_DRAWID+slot, "MGUIDBG1", x, y, hudWidth, hudHeight, 1.0);
+        Show(MGUI_DEBUG_AREA_DRAWID+slot, "MEGAUI_0", x, y, hudWidth, hudHeight, 1.0);
         Uncrop();
     }
 }

@@ -10,11 +10,13 @@ script "MegaUI Builder" (void) CLIENTSIDE {
         terminate;
     mguiBuilderIsOpen = true;
     ACS_NamedExecuteWithResult("core_freezeplayer",0,true);
-    while(!(GetPlayerInput(-1, INPUT_BUTTONS) & BT_JUMP)) {
+    SetMouseCursor("MEGAUI_3");
+    SetMouseOffset(6, 8);
+    while(true) {
         if(mguiBuilderIsPainting) {
-            //int x = GetVirtualMouseX(mguiBuilderHudWidth);
-            //int y = GetVirtualMouseY(mguiBuilderHudHeight);
-            //Draw(mguiBuilderGraphic, x, y, mguiBuilderHudWidth, mguiBuilderHudHeight, 1.0);
+            int x = (GetMouseX() * MGUI_HUD_WIDTH)>>16;
+            int y = (GetMouseY() * MGUI_HUD_HEIGHT)>>16;
+            Draw(mguiBuilderGraphic, x, y, MGUI_HUD_WIDTH, MGUI_HUD_HEIGHT, 1.0);
         }
         delay(1);
     }
@@ -28,10 +30,15 @@ script "MegaUI Builder Event" (int e, int areaId) CLIENTSIDE {
 }
 
 script "MegaUI Builder Chat" (int type, int message, int arg2) EVENT {
-    if (type == GAMEEVENT_CHAT) {
-        mguiBuilderIsPainting = true;
-        mguiBuilderGraphic = GetChatMessage(message, 0);
-        mguiBuilderHudWidth = MGUI_HUD_WIDTH;
-        mguiBuilderHudHeight = MGUI_HUD_HEIGHT;
-    }
+    if (type == GAMEEVENT_CHAT)
+        MGUI_Brush(GetChatMessage(message, 0));
+}
+
+function void MGUI_Brush(str graphic) {
+    mguiBuilderIsPainting = true;
+    mguiBuilderGraphic = graphic;
+    mguiBuilderHudWidth = MGUI_HUD_WIDTH;
+    mguiBuilderHudHeight = MGUI_HUD_HEIGHT;
+    SetMouseCursor("MEGAUI_4");
+    SetMouseOffset(0, 0);
 }
