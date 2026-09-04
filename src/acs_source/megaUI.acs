@@ -72,10 +72,10 @@ function void Uncrop(void) {
 // Mouse Menu events for callback script
 #DEFINE MGUI_EVENT_ENTER                0 // On mouse enter area
 #DEFINE MGUI_EVENT_EXIT                 1 // On mouse leave area
-#DEFINE MGUI_EVENT_MOUSE_DOWN           2 // On left mouse button press
-#DEFINE MGUI_EVENT_MOUSE_UP             3 // On left mouse button release
-#DEFINE MGUI_EVENT_MOUSE_ALT_DOWN       4 // On right mouse button press
-#DEFINE MGUI_EVENT_MOUSE_ALT_UP         5 // On right mouse button release
+#DEFINE MGUI_EVENT_DOWN                 2 // On left mouse button press
+#DEFINE MGUI_EVENT_UP                   3 // On left mouse button release
+#DEFINE MGUI_EVENT_ALT_DOWN             4 // On right mouse button press
+#DEFINE MGUI_EVENT_ALT_UP               5 // On right mouse button release
 
 function bool   StartMouseMenu(str scriptName) {    return MGUI_StartMouseMenu(scriptName); }
 function void   EndMouseMenu(void) {                MGUI_EndMouseMenu(); }
@@ -136,6 +136,7 @@ function void MGUI_DrawCore(int id, str value, str font, int x, int y, int hudWi
 
 #DEFINE MGUI_MOUSE_AREA_MAX         256
 #DEFINE MGUI_DEBUG_AREA_DRAWID      1
+#DEFINE MGUI_DEBUG_AREA_DRAWID_END  MGUI_DEBUG_AREA_DRAWID+MGUI_MOUSE_AREA_MAX
 
 #DEFINE MGUI_MOUSE_INTERACT         BT_ATTACK
 #DEFINE MGUI_MOUSE_ALT_INTERACT     BT_ALTATTACK
@@ -175,11 +176,11 @@ script "MegaUI Mouse Menu" (void) CLIENTSIDE {
 		int inputStateChange = GetPlayerInput(-1, INPUT_OLDBUTTONS) ^ input;
 
         if(inputStateChange & MGUI_MOUSE_INTERACT)
-			ACS_NamedExecuteWithResult(mguiMouseScript, (input & MGUI_MOUSE_INTERACT) ? MGUI_EVENT_MOUSE_DOWN 
-                : MGUI_EVENT_MOUSE_UP, area);
+			ACS_NamedExecuteWithResult(mguiMouseScript, (input & MGUI_MOUSE_INTERACT) ? MGUI_EVENT_DOWN 
+                : MGUI_EVENT_UP, area);
         else if(inputStateChange & MGUI_MOUSE_ALT_INTERACT)
-			ACS_NamedExecuteWithResult(mguiMouseScript, (input & MGUI_MOUSE_ALT_INTERACT) ? MGUI_EVENT_MOUSE_ALT_DOWN 
-                : MGUI_EVENT_MOUSE_ALT_UP, area);
+			ACS_NamedExecuteWithResult(mguiMouseScript, (input & MGUI_MOUSE_ALT_INTERACT) ? MGUI_EVENT_ALT_DOWN 
+                : MGUI_EVENT_ALT_UP, area);
         if(area != prevArea) {
             if(area != MGUI_AREA_NULL)      ACS_NamedExecuteWithResult(mguiMouseScript, MGUI_EVENT_ENTER, area);
             if(prevArea != MGUI_AREA_NULL)  ACS_NamedExecuteWithResult(mguiMouseScript, MGUI_EVENT_EXIT, prevArea);
@@ -221,6 +222,8 @@ function bool MGUI_StartMouseMenu(str scriptName) {
     }
     mguiIsMouseMenuOpen =   true; 
     mguiMouseScript =       scriptName;
+    for(int i = 0; i < MGUI_MOUSE_AREA_MAX+1; i++)
+        mguiMouseAreaIds[i] = MGUI_AREA_NULL;
     ACS_NamedExecuteWithResult("MegaUI Mouse Menu"); 
     return true;
 }
@@ -257,7 +260,7 @@ function void MGUI_SetMouseArea(int areaId, int x, int y, int width, int height,
         return;
     }
     int slot = -1;
-    for(int i = 0; i < MGUI_MOUSE_AREA_MAX; i++){
+    for(int i = 0; i < mguiMouseAreaCount; i++){
         if(mguiMouseAreaIds[i] == areaId) {
             slot = i;
             break;
@@ -285,7 +288,7 @@ function void MGUI_SetMouseArea(int areaId, int x, int y, int width, int height,
     mguiMouseAreaY2[slot] = FixedDiv((y+height)<<16,hudHeight<<16);
     if(MGUI_DEBUG) {
         Crop(x, y, width, height, hudWidth);
-        Show(MGUI_DEBUG_AREA_DRAWID+slot, "MEGAUI_0", x, y, hudWidth, hudHeight, 1.0);
+        Show(MGUI_DEBUG_AREA_DRAWID+slot, "MEGAUI_0", x, y, hudWidth, hudHeight, 0.8);
         Uncrop();
     }
 }

@@ -4,6 +4,7 @@
 #DEFINE MGUI_BUILDER_SFX_STAMP_REMOVE   "misc/eclipsedarkshot"
 #DEFINE MGUI_BUILDER_SFX_TOGGLE         "misc/cursorq"
 #DEFINE MGUI_BUILDER_SFX_RESET          "misc/fakereloadshort"
+#DEFINE MGUI_BUILDER_SFX_BRUSH          "misc/venusdrip"
 
 #DEFINE MGUI_BUILDER_MODE_SELECT        0
 #DEFINE MGUI_BUILDER_MODE_STAMP_MOVE    1
@@ -15,12 +16,11 @@
 bool    mguiBuilderIsRunning,
         mguiBuilderIsUniformScale;
 str     mguiBuilderStampGraphic;
-int     mguiBuilderWidthFactor,
-        mguiBuilderHeightFactor,
+int     mguiBuilderXFactor,
+        mguiBuilderYFactor,
         mguiBuilderMode;
 
-function int MGUI_GetBuilderHudWidth(void) { return (mguiBuilderWidthFactor * MGUI_HUD_WIDTH)>>16; }
-function int MGUI_GetBuilderHudHeight(void) { return (mguiBuilderHeightFactor * MGUI_HUD_HEIGHT)>>16; }
+function int MGUI_FactorToHud(int factor, int hud) { return (factor * hud)>>16; }
 
 function void MGUI_SetBuilderMode(int mode) {
     mguiBuilderMode = mode;
@@ -48,6 +48,7 @@ script "MegaUI Builder" (void) CLIENTSIDE {
     if(!StartMouseMenu("MegaUI Builder Event"))
         terminate;
     mguiBuilderIsRunning = true;
+    mguiBuilderIsUniformScale = true;
     int prevMouseX, prevMouseY, mouseX, mouseY;
     ACS_NamedExecuteWithResult("core_freezeplayer",0,true);
 
@@ -77,45 +78,46 @@ script "MegaUI Builder" (void) CLIENTSIDE {
             if((rawMouseDeltaX > 0) | (rawMouseDeltaY > 0)) {
                 if(mguiBuilderIsUniformScale) {
                     int tmp = MGUI_Max(rawMouseDeltaX, rawMouseDeltaY);
-                    mguiBuilderWidthFactor = FixedMul(mguiBuilderWidthFactor, 1.0 + tmp);
-                    mguiBuilderHeightFactor = FixedMul(mguiBuilderHeightFactor, 1.0 + tmp);
+                    mguiBuilderXFactor = FixedMul(mguiBuilderXFactor, 1.0 + tmp);
+                    mguiBuilderYFactor = FixedMul(mguiBuilderYFactor, 1.0 + tmp);
                 }
                 else {
-                    if(rawMouseDeltaX > 0)  mguiBuilderWidthFactor = FixedMul(mguiBuilderWidthFactor, 1.0 + rawMouseDeltaX);
-                    if(rawMouseDeltaY > 0)  mguiBuilderHeightFactor = FixedMul(mguiBuilderHeightFactor, 1.0 + rawMouseDeltaY);
+                    if(rawMouseDeltaX > 0)  mguiBuilderXFactor = FixedMul(mguiBuilderXFactor, 1.0 + rawMouseDeltaX);
+                    if(rawMouseDeltaY > 0)  mguiBuilderYFactor = FixedMul(mguiBuilderYFactor, 1.0 + rawMouseDeltaY);
                 }
             }
             else if((rawMouseDeltaX < 0) | (rawMouseDeltaY < 0)) {
                 if(mguiBuilderIsUniformScale) {
                     tmp = MGUI_Min(rawMouseDeltaX, rawMouseDeltaY);
-                    mguiBuilderWidthFactor = FixedDiv(mguiBuilderWidthFactor, 1.0 - tmp);
-                    mguiBuilderHeightFactor = FixedDiv(mguiBuilderHeightFactor, 1.0 - tmp);
+                    mguiBuilderXFactor = FixedDiv(mguiBuilderXFactor, 1.0 - tmp);
+                    mguiBuilderYFactor = FixedDiv(mguiBuilderYFactor, 1.0 - tmp);
                 }
                 else {
-                    if(rawMouseDeltaX < 0)  mguiBuilderWidthFactor = FixedDiv(mguiBuilderWidthFactor, 1.0 - rawMouseDeltaX);
-                    if(rawMouseDeltaY < 0)  mguiBuilderHeightFactor = FixedDiv(mguiBuilderHeightFactor, 1.0 - rawMouseDeltaY);
+                    if(rawMouseDeltaX < 0)  mguiBuilderXFactor = FixedDiv(mguiBuilderXFactor, 1.0 - rawMouseDeltaX);
+                    if(rawMouseDeltaY < 0)  mguiBuilderYFactor = FixedDiv(mguiBuilderYFactor, 1.0 - rawMouseDeltaY);
                 }
             }
 
             // Keyboard WASD 
             if(input & (BT_MOVELEFT|BT_FORWARD)) {
                 if((input & BT_MOVELEFT) | mguiBuilderIsUniformScale)
-                    mguiBuilderWidthFactor = FixedMul(mguiBuilderWidthFactor, MGUI_BUILDER_SCALE_DELTA);
+                    mguiBuilderXFactor = FixedMul(mguiBuilderXFactor, MGUI_BUILDER_SCALE_DELTA);
                 if((input & BT_FORWARD) | mguiBuilderIsUniformScale)         
-                    mguiBuilderHeightFactor = FixedMul(mguiBuilderHeightFactor, MGUI_BUILDER_SCALE_DELTA);
+                    mguiBuilderYFactor = FixedMul(mguiBuilderYFactor, MGUI_BUILDER_SCALE_DELTA);
             }
             else if(input & (BT_MOVERIGHT|BT_BACK)) {
                 if((input & BT_MOVERIGHT)|mguiBuilderIsUniformScale)         
-                    mguiBuilderWidthFactor = FixedDiv(mguiBuilderWidthFactor, MGUI_BUILDER_SCALE_DELTA);
+                    mguiBuilderXFactor = FixedDiv(mguiBuilderXFactor, MGUI_BUILDER_SCALE_DELTA);
                 if((input & BT_BACK)|mguiBuilderIsUniformScale)         
-                    mguiBuilderHeightFactor = FixedDiv(mguiBuilderHeightFactor, MGUI_BUILDER_SCALE_DELTA);
+                    mguiBuilderYFactor = FixedDiv(mguiBuilderYFactor, MGUI_BUILDER_SCALE_DELTA);
             }
 
         }
 
         if((mguiBuilderMode == MGUI_BUILDER_MODE_STAMP_MOVE) | (mguiBuilderMode == MGUI_BUILDER_MODE_STAMP_SCALE)) {
-            int hudWidth = MGUI_GetBuilderHudWidth(),
-                hudHeight = MGUI_GetBuilderHudHeight(),
+
+            int hudWidth = MGUI_FactorToHud(mguiBuilderXFactor, MGUI_HUD_WIDTH), 
+                hudHeight = MGUI_FactorToHud(mguiBuilderYFactor, MGUI_HUD_HEIGHT),
                 x = (mouseX*hudWidth)>>16,
                 y = (mouseY*hudHeight)>>16;
             Draw(mguiBuilderStampGraphic, x, y, hudWidth, hudHeight, 1.0);
@@ -132,63 +134,20 @@ script "MegaUI Builder" (void) CLIENTSIDE {
 
 
 
-script "MegaUI Builder Event" (int e, int areaId) CLIENTSIDE {
-    switch(e) {
-
-        // Left click press
-        case MGUI_EVENT_MOUSE_DOWN:
-            switch(mguiBuilderMode) {
-                case MGUI_BUILDER_MODE_STAMP_MOVE:
-                case MGUI_BUILDER_MODE_STAMP_SCALE:
-                    if(!MGUI_AddStamp(mguiBuilderStampGraphic))     MGUI_Play(MGUI_BUILDER_SFX_NO);
-                    else                                            MGUI_Play(MGUI_BUILDER_SFX_STAMP_ADD);
-                    MGUI_SetBuilderMode(MGUI_BUILDER_MODE_SELECT);
-                    break;
-            }
-            break;
-
-        // Right click press
-        case MGUI_EVENT_MOUSE_ALT_DOWN:
-            switch(mguiBuilderMode) {
-
-                case MGUI_BUILDER_MODE_SELECT: 
-                    MGUI_RemoveStamp(-1);
-                    break;
-
-                case MGUI_BUILDER_MODE_STAMP_MOVE:
-                    MGUI_SetBuilderMode(MGUI_BUILDER_MODE_STAMP_SCALE);
-                    break;
-            }
-            break;
-
-        // Right click release
-        case MGUI_EVENT_MOUSE_ALT_UP:
-            switch(mguiBuilderMode) {
-                case MGUI_BUILDER_MODE_STAMP_SCALE:
-                    MGUI_SetBuilderMode(MGUI_BUILDER_MODE_STAMP_MOVE);
-                    break;
-            }
-            break;
-    }
-
-}
 
 script "MegaUI Builder Chat" (int type, int message, int arg2) EVENT {
     if(!mguiBuilderIsRunning)
         terminate;;
     if (type == GAMEEVENT_CHAT) {
-        mguiBuilderStampGraphic = GetChatMessage(message, 0);
-        mguiBuilderWidthFactor = 1.0;
-        mguiBuilderHeightFactor = 1.0;
-        mguiBuilderIsUniformScale = true;
-        MGUI_SetBuilderMode(MGUI_BUILDER_MODE_STAMP_MOVE);
+        MGUI_EditStamp(GetChatMessage(message, 0), 1.0, 1.0);
     }
 }
 
+
 function void MGUI_BuilderSpecialInputCheck(int input) {
     if(input & BT_RELOAD) {
-        mguiBuilderWidthFactor = 1.0;
-        mguiBuilderHeightFactor = 1.0;
+        mguiBuilderXFactor = 1.0;
+        mguiBuilderYFactor = 1.0;
         MGUI_Play(MGUI_BUILDER_SFX_RESET);
         MGUI_Log("Reset scale.");
     }
@@ -205,45 +164,82 @@ function void MGUI_BuilderSpecialInputCheck(int input) {
 //      Stamps
 // -------------------------------------------------------------------------------------------
 
-#DEFINE MGUI_BUILDER_STAMP_MAX              256
-#DEFINE MGUI_BUILDER_STAMP_DRAWID           MGUI_DEBUG_AREA_DRAWID+MGUI_MOUSE_AREA_MAX
+#DEFINE MGUI_BUILDER_STAMP_MAX              3
+#DEFINE MGUI_BUILDER_STAMP_DRAWID           MGUI_DEBUG_AREA_DRAWID_END
+#DEFINE MGUI_BUILDER_STAMP_DRAWID_END       MGUI_BUILDER_STAMP_DRAWID + (MGUI_BUILDER_STAMP_MAX * 2) // 1 image and 1 setting icon
+#DEFINE MGUI_BUILDER_STAMP_HOOK_ALPHA       0.4
 
 int mguiBuilderStampCount = 0;
 int mguiBuilderStampValue[MGUI_BUILDER_STAMP_MAX+1]; 
+int mguiBuilderStampX[MGUI_BUILDER_STAMP_MAX+1]; 
+int mguiBuilderStampY[MGUI_BUILDER_STAMP_MAX+1]; 
+int mguiBuilderStampXFactor[MGUI_BUILDER_STAMP_MAX+1]; 
+int mguiBuilderStampYFactor[MGUI_BUILDER_STAMP_MAX+1]; 
 
-function int MGUI_GetStampSlotId(int slot) { return MGUI_BUILDER_STAMP_DRAWID+(MGUI_BUILDER_STAMP_MAX-slot); }
+function int MGUI_GetStampGraphicId(int slot) { return (MGUI_BUILDER_STAMP_DRAWID_END - 1) - (slot<<1); }
+function int MGUI_GetStampGraphicSlot(int graphicId) { return ((MGUI_BUILDER_STAMP_DRAWID_END - 1) - graphicId)>>1; }
+    
 
 function bool MGUI_AddStamp(str value) {
     if(mguiBuilderStampCount == MGUI_BUILDER_STAMP_MAX)
         return false;
 
     int slot = mguiBuilderStampCount;
-    mguiBuilderStampValue[slot] = value;
+    MGUI_SetStamp(slot, value, GetMouseX(), GetMouseY(), mguiBuilderXFactor, mguiBuilderYFactor);
 
-    int hudWidth = MGUI_GetBuilderHudWidth(),
-        hudHeight = MGUI_GetBuilderHudHeight();
-    Show(MGUI_GetStampSlotId(slot), value, 
-        (GetMouseX()*hudWidth)>>16,     (GetMouseY()*hudHeight)>>16,
-        hudWidth,                       hudHeight, 
-        1.0);
     mguiBuilderStampCount++;
-    MGUI_Log(strParam(s:"Added stamp ", d:slot, s:". Total : ", d:mguiBuilderStampCount));
     return true;
 }
 
-function void MGUI_RemoveStamp(int slot) {
-    log(s:"delete ", d:slot, s:" currently ", d:mguiBuilderStampCount );
-    if((slot == -1) && (mguiBuilderStampCount > 0))
-        slot = mguiBuilderStampCount-1;
-    if((slot < 0) | (slot >= mguiBuilderStampCount))
-        return;
-    for(int i = slot; i < mguiBuilderStampCount; i++) {
-        mguiBuilderStampValue[i] = mguiBuilderStampValue[i+1];
+function void MGUI_SetStamp(int slot, str value, int x, int y, int xFactor, int yFactor) {
+    mguiBuilderStampValue[slot] =       value;
+    mguiBuilderStampX[slot] =           x;
+    mguiBuilderStampY[slot] =           y;
+    mguiBuilderStampXFactor[slot] =     xFactor;
+    mguiBuilderStampYFactor[slot] =     yFactor;
+
+    int id = MGUI_GetStampGraphicId(slot);
+
+    int hudWidth = MGUI_FactorToHud(xFactor, MGUI_HUD_WIDTH),
+        hudHeight = MGUI_FactorToHud(yFactor, MGUI_HUD_HEIGHT);
+
+    Show(id, value, (x*hudWidth)>>16, (y*hudHeight)>>16, hudWidth, hudHeight, 1.0);
+    SetMouseArea(id, (x*320)>>16, (y*240)>>16, 16, 16, 320, 240);
+    MGUI_DrawStampHook(id, MGUI_BUILDER_STAMP_HOOK_ALPHA);
+}
+
+function void MGUI_RemoveStamp(int stampId) {
+    for(int slotA = 0; slotA < mguiBuilderStampCount; slotA++) {
+        if(MGUI_GetStampGraphicId(slotA) == stampId) {
+
+
+            for(int slotB = slotA; slotB < mguiBuilderStampCount; slotB++) {
+                MGUI_SetStamp(slotB, 
+                    mguiBuilderStampValue[slotB+1], 
+                    mguiBuilderStampX[slotB+1], 
+                    mguiBuilderStampY[slotB+1], 
+                    mguiBuilderStampXFactor[slotB+1], 
+                    mguiBuilderStampYFactor[slotB+1]);
+            }
+
+            // Erase the last one
+            int id = MGUI_GetStampGraphicId(mguiBuilderStampCount-1);
+            DeleteMouseArea(id);
+            Hide(id);
+            Hide(id-1);
+            mguiBuilderStampCount--;
+            return;
+        }
     }
-    Hide(MGUI_GetStampSlotId(slot));
-    MGUI_Log(strParam(s:"Removed stamp ", d:slot));
-    mguiBuilderStampCount--;
-    MGUI_Play(MGUI_BUILDER_SFX_STAMP_REMOVE);
+}
+
+
+function void MGUI_EditStamp(int value, int xFactor, int yFactor) {
+    MGUI_Play(MGUI_BUILDER_SFX_BRUSH);
+    mguiBuilderStampGraphic = value; 
+    mguiBuilderXFactor = xFactor;
+    mguiBuilderYFactor = yFactor;
+    MGUI_SetBuilderMode(MGUI_BUILDER_MODE_STAMP_MOVE);
 }
 
 // -------------------------------------------------------------------------------------------
@@ -251,3 +247,106 @@ function void MGUI_RemoveStamp(int slot) {
 // -------------------------------------------------------------------------------------------
 
 function void MGUI_Play(str sound) { LocalAmbientSound(sound,127); }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function void MGUI_DrawStampHook(int areaId, int alpha) {
+    int slot = MGUI_GetStampGraphicSlot(areaId);
+    Show(areaId-1, "MEGAUI_6", (mguiBuilderStampX[slot]*320)>>16, (mguiBuilderStampY[slot]*240)>>16, 320, 240, alpha);
+}
+
+
+script "MegaUI Builder Event" (int e, int areaId) CLIENTSIDE {
+    switch(e) {
+
+        // Mouse enters area
+        case MGUI_EVENT_ENTER:
+            MGUI_DrawStampHook(areaId, 1.0);
+            break;
+
+        // Mouse exits area
+        case MGUI_EVENT_EXIT:
+            MGUI_DrawStampHook(areaId, MGUI_BUILDER_STAMP_HOOK_ALPHA);
+            break;
+
+        // Left click press
+        case MGUI_EVENT_DOWN:
+            switch(mguiBuilderMode) {
+                case MGUI_BUILDER_MODE_SELECT:
+                    if(areaId != MGUI_AREA_NULL) {
+                        int daSlot = MGUI_GetStampGraphicSlot(areaId);
+                        MGUI_EditStamp(mguiBuilderStampValue[daSlot], mguiBuilderStampXFactor[daSlot], mguiBuilderStampYFactor[daSlot]);
+                        MGUI_RemoveStamp(areaId);
+                    }
+                    break;
+                case MGUI_BUILDER_MODE_STAMP_MOVE:
+                case MGUI_BUILDER_MODE_STAMP_SCALE:
+                    if(!MGUI_AddStamp(mguiBuilderStampGraphic))     MGUI_Play(MGUI_BUILDER_SFX_NO);
+                    else                                            MGUI_Play(MGUI_BUILDER_SFX_STAMP_ADD);
+                    MGUI_SetBuilderMode(MGUI_BUILDER_MODE_SELECT);
+                    break;
+            }
+            break;
+
+        // Right click press
+        case MGUI_EVENT_ALT_DOWN:
+            switch(mguiBuilderMode) {
+
+                case MGUI_BUILDER_MODE_SELECT: 
+                    if(areaId != MGUI_AREA_NULL) {
+                        MGUI_Play(MGUI_BUILDER_SFX_STAMP_REMOVE);
+                        MGUI_RemoveStamp(areaId);
+                    }
+                    break;
+
+                case MGUI_BUILDER_MODE_STAMP_MOVE:
+                    MGUI_SetBuilderMode(MGUI_BUILDER_MODE_STAMP_SCALE);
+                    break;
+            }
+            break;
+
+        // Right click release
+        case MGUI_EVENT_ALT_UP:
+            switch(mguiBuilderMode) {
+                case MGUI_BUILDER_MODE_STAMP_SCALE:
+                    MGUI_SetBuilderMode(MGUI_BUILDER_MODE_STAMP_MOVE);
+                    break;
+            }
+            break;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
