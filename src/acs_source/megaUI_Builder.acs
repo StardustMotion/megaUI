@@ -1,44 +1,253 @@
 
-bool    mguiBuilderIsOpen = false;
-str     mguiBuilderGraphic = "";
-bool    mguiBuilderIsPainting = false;
-int     mguiBuilderHudWidth;
-int     mguiBuilderHudHeight;
+#DEFINE MGUI_BUILDER_SFX_NO             "misc/wanaan"
+#DEFINE MGUI_BUILDER_SFX_STAMP_ADD      "misc/mercuryconveyorswitch"
+#DEFINE MGUI_BUILDER_SFX_STAMP_REMOVE   "misc/eclipsedarkshot"
+#DEFINE MGUI_BUILDER_SFX_TOGGLE         "misc/cursorq"
+#DEFINE MGUI_BUILDER_SFX_RESET          "misc/fakereloadshort"
+
+#DEFINE MGUI_BUILDER_MODE_SELECT        0
+#DEFINE MGUI_BUILDER_MODE_STAMP_MOVE    1
+#DEFINE MGUI_BUILDER_MODE_STAMP_SCALE   2
+
+#DEFINE MGUI_BUILDER_MOUSE_DELTA        0.002
+#DEFINE MGUI_BUILDER_SCALE_DELTA        1.03
+
+bool    mguiBuilderIsRunning,
+        mguiBuilderIsUniformScale;
+str     mguiBuilderStampGraphic;
+int     mguiBuilderWidthFactor,
+        mguiBuilderHeightFactor,
+        mguiBuilderMode;
+
+function int MGUI_GetBuilderHudWidth(void) { return (mguiBuilderWidthFactor * MGUI_HUD_WIDTH)>>16; }
+function int MGUI_GetBuilderHudHeight(void) { return (mguiBuilderHeightFactor * MGUI_HUD_HEIGHT)>>16; }
+
+function void MGUI_SetBuilderMode(int mode) {
+    mguiBuilderMode = mode;
+    switch(mode) {
+
+        case MGUI_BUILDER_MODE_SELECT:
+            SetMouseCursor("MEGAUI_3");
+            SetMouseOffset(6, 8);
+            break;
+
+        case MGUI_BUILDER_MODE_STAMP_MOVE:
+            SetMouseCursor("MEGAUI_4");
+            SetMouseOffset(0, 0);
+            SetMouseSpeed(1.0);
+            break;
+
+        case MGUI_BUILDER_MODE_STAMP_SCALE:
+            SetMouseCursor("MEGAUI_5");
+            SetMouseSpeed(0.0);
+            break;
+    }
+}
 
 script "MegaUI Builder" (void) CLIENTSIDE {
     if(!StartMouseMenu("MegaUI Builder Event"))
         terminate;
-    mguiBuilderIsOpen = true;
+    mguiBuilderIsRunning = true;
+    int prevMouseX, prevMouseY, mouseX, mouseY;
     ACS_NamedExecuteWithResult("core_freezeplayer",0,true);
-    SetMouseCursor("MEGAUI_3");
-    SetMouseOffset(6, 8);
+
+    MGUI_SetBuilderMode(MGUI_BUILDER_MODE_SELECT);
+
     while(true) {
-        if(mguiBuilderIsPainting) {
-            int x = (GetMouseX() * MGUI_HUD_WIDTH)>>16;
-            int y = (GetMouseY() * MGUI_HUD_HEIGHT)>>16;
-            Draw(mguiBuilderGraphic, x, y, MGUI_HUD_WIDTH, MGUI_HUD_HEIGHT, 1.0);
+        mouseX = GetMouseX();
+        mouseY = GetMouseY();
+        int input = GetPlayerInput(-1, INPUT_BUTTONS);
+        int prevInput = GetPlayerInput(-1, INPUT_OLDBUTTONS);
+        int pressedInput = (input ^ prevInput) & ~prevInput;
+        MGUI_BuilderSpecialInputCheck(pressedInput);
+
+        // Stamp Move mode
+        if(mguiBuilderMode == MGUI_BUILDER_MODE_STAMP_MOVE) {
+            // Keyboard WASD 
+            if(input & BT_MOVELEFT)       SetMouseX(mouseX-MGUI_BUILDER_MOUSE_DELTA);
+            else if(input & BT_MOVERIGHT) SetMouseX(mouseX+MGUI_BUILDER_MOUSE_DELTA);
+            if(input & BT_FORWARD)        SetMouseY(mouseY-MGUI_BUILDER_MOUSE_DELTA);
+            else if(input & BT_BACK)      SetMouseY(mouseY+MGUI_BUILDER_MOUSE_DELTA);
+        }
+        // Stamp Scale mode
+        else if(mguiBuilderMode == MGUI_BUILDER_MODE_STAMP_SCALE) {
+            // Mouse
+            int rawMouseDeltaX = GetRawMouseDeltaX()<<4;
+            int rawMouseDeltaY = GetRawMouseDeltaY()<<4;
+            if((rawMouseDeltaX > 0) | (rawMouseDeltaY > 0)) {
+                if(mguiBuilderIsUniformScale) {
+                    int tmp = MGUI_Max(rawMouseDeltaX, rawMouseDeltaY);
+                    mguiBuilderWidthFactor = FixedMul(mguiBuilderWidthFactor, 1.0 + tmp);
+                    mguiBuilderHeightFactor = FixedMul(mguiBuilderHeightFactor, 1.0 + tmp);
+                }
+                else {
+                    if(rawMouseDeltaX > 0)  mguiBuilderWidthFactor = FixedMul(mguiBuilderWidthFactor, 1.0 + rawMouseDeltaX);
+                    if(rawMouseDeltaY > 0)  mguiBuilderHeightFactor = FixedMul(mguiBuilderHeightFactor, 1.0 + rawMouseDeltaY);
+                }
+            }
+            else if((rawMouseDeltaX < 0) | (rawMouseDeltaY < 0)) {
+                if(mguiBuilderIsUniformScale) {
+                    tmp = MGUI_Min(rawMouseDeltaX, rawMouseDeltaY);
+                    mguiBuilderWidthFactor = FixedDiv(mguiBuilderWidthFactor, 1.0 - tmp);
+                    mguiBuilderHeightFactor = FixedDiv(mguiBuilderHeightFactor, 1.0 - tmp);
+                }
+                else {
+                    if(rawMouseDeltaX < 0)  mguiBuilderWidthFactor = FixedDiv(mguiBuilderWidthFactor, 1.0 - rawMouseDeltaX);
+                    if(rawMouseDeltaY < 0)  mguiBuilderHeightFactor = FixedDiv(mguiBuilderHeightFactor, 1.0 - rawMouseDeltaY);
+                }
+            }
+
+            // Keyboard WASD 
+            if(input & (BT_MOVELEFT|BT_FORWARD)) {
+                if((input & BT_MOVELEFT) | mguiBuilderIsUniformScale)
+                    mguiBuilderWidthFactor = FixedMul(mguiBuilderWidthFactor, MGUI_BUILDER_SCALE_DELTA);
+                if((input & BT_FORWARD) | mguiBuilderIsUniformScale)         
+                    mguiBuilderHeightFactor = FixedMul(mguiBuilderHeightFactor, MGUI_BUILDER_SCALE_DELTA);
+            }
+            else if(input & (BT_MOVERIGHT|BT_BACK)) {
+                if((input & BT_MOVERIGHT)|mguiBuilderIsUniformScale)         
+                    mguiBuilderWidthFactor = FixedDiv(mguiBuilderWidthFactor, MGUI_BUILDER_SCALE_DELTA);
+                if((input & BT_BACK)|mguiBuilderIsUniformScale)         
+                    mguiBuilderHeightFactor = FixedDiv(mguiBuilderHeightFactor, MGUI_BUILDER_SCALE_DELTA);
+            }
+
+        }
+
+        if((mguiBuilderMode == MGUI_BUILDER_MODE_STAMP_MOVE) | (mguiBuilderMode == MGUI_BUILDER_MODE_STAMP_SCALE)) {
+            int hudWidth = MGUI_GetBuilderHudWidth(),
+                hudHeight = MGUI_GetBuilderHudHeight(),
+                x = (mouseX*hudWidth)>>16,
+                y = (mouseY*hudHeight)>>16;
+            Draw(mguiBuilderStampGraphic, x, y, hudWidth, hudHeight, 1.0);
         }
         delay(1);
+        prevMouseX = mouseX;
+        prevMouseY = mouseY;
     }
     ACS_NamedExecuteWithResult("core_freezeplayer",0,false);
-    mguiBuilderIsOpen = false;
+    mguiBuilderIsRunning = false;
     EndMouseMenu();
 }
 
+
+
+
 script "MegaUI Builder Event" (int e, int areaId) CLIENTSIDE {
+    switch(e) {
+
+        // Left click press
+        case MGUI_EVENT_MOUSE_DOWN:
+            switch(mguiBuilderMode) {
+                case MGUI_BUILDER_MODE_STAMP_MOVE:
+                case MGUI_BUILDER_MODE_STAMP_SCALE:
+                    if(!MGUI_AddStamp(mguiBuilderStampGraphic))     MGUI_Play(MGUI_BUILDER_SFX_NO);
+                    else                                            MGUI_Play(MGUI_BUILDER_SFX_STAMP_ADD);
+                    MGUI_SetBuilderMode(MGUI_BUILDER_MODE_SELECT);
+                    break;
+            }
+            break;
+
+        // Right click press
+        case MGUI_EVENT_MOUSE_ALT_DOWN:
+            switch(mguiBuilderMode) {
+
+                case MGUI_BUILDER_MODE_SELECT: 
+                    MGUI_RemoveStamp(-1);
+                    break;
+
+                case MGUI_BUILDER_MODE_STAMP_MOVE:
+                    MGUI_SetBuilderMode(MGUI_BUILDER_MODE_STAMP_SCALE);
+                    break;
+            }
+            break;
+
+        // Right click release
+        case MGUI_EVENT_MOUSE_ALT_UP:
+            switch(mguiBuilderMode) {
+                case MGUI_BUILDER_MODE_STAMP_SCALE:
+                    MGUI_SetBuilderMode(MGUI_BUILDER_MODE_STAMP_MOVE);
+                    break;
+            }
+            break;
+    }
 
 }
 
 script "MegaUI Builder Chat" (int type, int message, int arg2) EVENT {
-    if (type == GAMEEVENT_CHAT)
-        MGUI_Brush(GetChatMessage(message, 0));
+    if(!mguiBuilderIsRunning)
+        terminate;;
+    if (type == GAMEEVENT_CHAT) {
+        mguiBuilderStampGraphic = GetChatMessage(message, 0);
+        mguiBuilderWidthFactor = 1.0;
+        mguiBuilderHeightFactor = 1.0;
+        mguiBuilderIsUniformScale = true;
+        MGUI_SetBuilderMode(MGUI_BUILDER_MODE_STAMP_MOVE);
+    }
 }
 
-function void MGUI_Brush(str graphic) {
-    mguiBuilderIsPainting = true;
-    mguiBuilderGraphic = graphic;
-    mguiBuilderHudWidth = MGUI_HUD_WIDTH;
-    mguiBuilderHudHeight = MGUI_HUD_HEIGHT;
-    SetMouseCursor("MEGAUI_4");
-    SetMouseOffset(0, 0);
+function void MGUI_BuilderSpecialInputCheck(int input) {
+    if(input & BT_RELOAD) {
+        mguiBuilderWidthFactor = 1.0;
+        mguiBuilderHeightFactor = 1.0;
+        MGUI_Play(MGUI_BUILDER_SFX_RESET);
+        MGUI_Log("Reset scale.");
+    }
+    if(input & BT_SHOWSCORES) {
+        MGUI_Play(MGUI_BUILDER_SFX_TOGGLE);
+        mguiBuilderIsUniformScale = !mguiBuilderIsUniformScale;
+        MGUI_Log(strParam(s:"Uniform scale : ", d:mguiBuilderIsUniformScale));
+    }
+
+
 }
+
+// -------------------------------------------------------------------------------------------
+//      Stamps
+// -------------------------------------------------------------------------------------------
+
+#DEFINE MGUI_BUILDER_STAMP_MAX              256
+#DEFINE MGUI_BUILDER_STAMP_DRAWID           MGUI_DEBUG_AREA_DRAWID+MGUI_MOUSE_AREA_MAX
+
+int mguiBuilderStampCount = 0;
+int mguiBuilderStampValue[MGUI_BUILDER_STAMP_MAX+1]; 
+
+function int MGUI_GetStampSlotId(int slot) { return MGUI_BUILDER_STAMP_DRAWID+(MGUI_BUILDER_STAMP_MAX-slot); }
+
+function bool MGUI_AddStamp(str value) {
+    if(mguiBuilderStampCount == MGUI_BUILDER_STAMP_MAX)
+        return false;
+
+    int slot = mguiBuilderStampCount;
+    mguiBuilderStampValue[slot] = value;
+
+    int hudWidth = MGUI_GetBuilderHudWidth(),
+        hudHeight = MGUI_GetBuilderHudHeight();
+    Show(MGUI_GetStampSlotId(slot), value, 
+        (GetMouseX()*hudWidth)>>16,     (GetMouseY()*hudHeight)>>16,
+        hudWidth,                       hudHeight, 
+        1.0);
+    mguiBuilderStampCount++;
+    MGUI_Log(strParam(s:"Added stamp ", d:slot, s:". Total : ", d:mguiBuilderStampCount));
+    return true;
+}
+
+function void MGUI_RemoveStamp(int slot) {
+    log(s:"delete ", d:slot, s:" currently ", d:mguiBuilderStampCount );
+    if((slot == -1) && (mguiBuilderStampCount > 0))
+        slot = mguiBuilderStampCount-1;
+    if((slot < 0) | (slot >= mguiBuilderStampCount))
+        return;
+    for(int i = slot; i < mguiBuilderStampCount; i++) {
+        mguiBuilderStampValue[i] = mguiBuilderStampValue[i+1];
+    }
+    Hide(MGUI_GetStampSlotId(slot));
+    MGUI_Log(strParam(s:"Removed stamp ", d:slot));
+    mguiBuilderStampCount--;
+    MGUI_Play(MGUI_BUILDER_SFX_STAMP_REMOVE);
+}
+
+// -------------------------------------------------------------------------------------------
+//      Misc / utils
+// -------------------------------------------------------------------------------------------
+
+function void MGUI_Play(str sound) { LocalAmbientSound(sound,127); }

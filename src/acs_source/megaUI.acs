@@ -93,6 +93,8 @@ function int    GetMouseX(void) {                   return MGUI_MouseAPI(3, fals
 function void   SetMouseX(int value) {              MGUI_MouseAPI(4, value); }
 function int    GetMouseY(void) {                   return MGUI_MouseAPI(5, false); }
 function void   SetMouseY(int value) {              MGUI_MouseAPI(6, value); }
+function int    GetRawMouseDeltaX(void) {           return MGUI_MouseAPI(7, false); }
+function int    GetRawMouseDeltaY(void) {           return MGUI_MouseAPI(8, false); }
 
 
 /*
@@ -112,6 +114,9 @@ function void   SetMouseY(int value) {              MGUI_MouseAPI(6, value); }
 #DEFINE MGUI_HUD_HEIGHT             240
 
 function int MGUI_Roundf(int n) {               return (n+0.5)&0xFFFF0000; }
+function int MGUI_Min(int x, int y) {           return (x>y ? y : x); }
+function int MGUI_Max(int x, int y) {           return (x>y ? x : y); }
+function int MGUI_Clamp(int n, int l, int r) {  return MGUI_Max(MGUI_Min(n,r),l); }
 
 function void MGUI_Log(str message) { 
     if(MGUI_DEBUG) 
@@ -130,7 +135,7 @@ function void MGUI_DrawCore(int id, str value, str font, int x, int y, int hudWi
     /////////////////////////
 
 #DEFINE MGUI_MOUSE_AREA_MAX         256
-#DEFINE MGUI_DEBUG_AREA_DRAWID      5
+#DEFINE MGUI_DEBUG_AREA_DRAWID      1
 
 #DEFINE MGUI_MOUSE_INTERACT         BT_ATTACK
 #DEFINE MGUI_MOUSE_ALT_INTERACT     BT_ALTATTACK
@@ -155,7 +160,6 @@ script "MegaUI Mouse Menu" (void) CLIENTSIDE {
     int prevArea =  MGUI_AREA_NULL, area = prevArea;
     SetMouseX(0.5);
     SetMouseY(0.5);
-    int screenRatio = FixedDiv(GetScreenWidth()<<16, GetScreenHeight()<<16);
     while(mguiIsMouseMenuOpen) {
         int x = MGUI_Roundf(GetMouseX()*MGUI_HUD_WIDTH)>>16,
             y = MGUI_Roundf(GetMouseY()*MGUI_HUD_HEIGHT)>>16;
@@ -184,12 +188,12 @@ script "MegaUI Mouse Menu" (void) CLIENTSIDE {
 
         // Mouse delta
         delay(1);
-        int delta = GetPlayerInput(-1, INPUT_YAW);
+        int delta = GetRawMouseDeltaX();
         if(delta)
             SetMouseX(mguiMouseX - (FixedMul(delta<<16, mguiMouseSpeed)>>14));
-        delta = GetPlayerInput(-1, INPUT_PITCH);
+        delta = GetRawMouseDeltaY();
         if(delta)
-            SetMouseY(mguiMouseY - FixedMul((FixedMul(delta<<16, mguiMouseSpeed)>>14), screenRatio));
+            SetMouseY(mguiMouseY - (FixedMul(delta<<16, mguiMouseSpeed)>>14));
     }
 }
 
@@ -238,9 +242,11 @@ function int MGUI_MouseAPI(int type, int value) {
         case 1: mguiMouseOffset = value; break;
         case 2: mguiMouseSpeed = value; break;
         case 3: return mguiMouseX; break;
-        case 4: mguiMouseX = (value > 1.0 ? 1.0 : (value < 0 ? 0 : value)); break;
+        case 4: mguiMouseX = MGUI_Clamp(value, 0, 1.0); break;
         case 5: return mguiMouseY; break;
-        case 6: mguiMouseY = (value > 1.0 ? 1.0 : (value < 0 ? 0 : value)); break;
+        case 6: mguiMouseY = MGUI_Clamp(value, 0, 1.0); break;
+        case 7: return GetPlayerInput(-1, INPUT_YAW);
+        case 8: return (GetPlayerInput(-1, INPUT_PITCH)*GetScreenWidth())/GetScreenHeight();
     }
     return 0;
 }
