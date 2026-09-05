@@ -1,0 +1,26 @@
+
+// -------------------------------------------------------------------------------------------
+//      Misc / utils
+// -------------------------------------------------------------------------------------------
+
+// Brush types
+#DEFINE MGUI_EDITOR_BRUSH_GRAPHIC       0
+#DEFINE MGUI_EDITOR_BRUSH_TEXT          1
+
+// Sounds
+#DEFINE MGUI_EDITOR_SFX_NO             "misc/wanaan"
+#DEFINE MGUI_EDITOR_SFX_STAMP_ADD      "misc/mercuryconveyorswitch"
+#DEFINE MGUI_EDITOR_SFX_STAMP_REMOVE   "misc/eclipsedarkshot"
+#DEFINE MGUI_EDITOR_SFX_TOGGLE         "misc/cursorq"
+#DEFINE MGUI_EDITOR_SFX_RESET          "misc/fakereloadshort"
+#DEFINE MGUI_EDITOR_SFX_BRUSH          "misc/venusdrip"
+
+
+function void MGUIEditor_Log(str message) { 
+    log(s:"\c[v7][\c[z2] MegaUI Editor \c[v7]] \c-",s:message); 
+}
+
+function void MGUIEditor_Play(str sound) { LocalAmbientSound(sound,127); }
+
+function int MGUIEditor_ToHud(int factor, int hud) { return (factor * hud)>>16; }
+

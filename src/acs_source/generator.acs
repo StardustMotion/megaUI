@@ -1,0 +1,81 @@
+
+// -------------------------------------------------------------------------------------------
+//     ACS Generator 
+// -------------------------------------------------------------------------------------------
+
+// https://cleantextkit.com/remove-timestamps/
+
+#DEFINE MGUI_DRAWID                        MGUI_EDITOR_STAMP_DRAWID_END
+
+script "MegaUI Build" (void) CLIENTSIDE {
+    if(!mguiEditorIsRunning) {
+        MGUIEditor_Log("You must be in the editor to generate code.");
+        terminate;
+    }
+    str stringBuilder = "\n
+        //===================================//\n
+        //          Mega UI ACS [START]      //\n
+        //===================================//\n";
+
+    //////////////////////////////
+    //     Data parsing         //
+    //////////////////////////////
+
+    for(int slot = 0; slot < mguiEditorStampCount; slot++) {
+
+        int hudWidth = MGUIEditor_ToHud(mguiEditorStampXFactor[slot], MGUI_HUD_WIDTH),
+            hudHeight = MGUIEditor_ToHud(mguiEditorStampYFactor[slot], MGUI_HUD_HEIGHT),
+            x = MGUIEditor_ToHud(mguiEditorStampX[slot], hudWidth),
+            y = MGUIEditor_ToHud(mguiEditorStampY[slot], hudHeight);
+        str alpha = mguiEditorStampAlpha[slot] == 1.0 ? "1.0" : mguiEditorStampAlpha[slot];
+
+
+        // Graphic stamp
+        if(MGUIEditor_GetStampType(slot)==MGUI_EDITOR_BRUSH_TEXT) {
+            stringBuilder = strParam(s:stringBuilder, s:"\nShowText(",
+                s:"MGUI_DRAWID+", d:slot, 
+                s:", \"",   s:mguiEditorStampContent[slot], 
+                s:"\", \"", s:mguiEditorStampFont[slot], 
+                s:"\", ",   d:x,
+                s:", ",     d:y,
+                s:", ",     d:hudWidth,
+                s:", ",     d:hudHeight,
+                s:", ",     d:MGUIEditor_ToHud(mguiEditorStampWrap[slot], hudWidth),
+                s:", ",     s:alpha,
+                s:");"
+            );
+        }
+
+        // Text stamp
+        else {
+            stringBuilder = strParam(s:stringBuilder, s:"\nShow(",
+                s:"MGUI_DRAWID+", d:slot, 
+                s:", \"",   s:mguiEditorStampContent[slot], 
+                s:"\", ",   d:x,
+                s:", ",     d:y,
+                s:", ",     d:hudWidth,
+                s:", ",     d:hudHeight,
+                s:", ",     s:alpha,
+                s:");"
+            );
+        }
+    }
+
+    stringBuilder = strParam(s:stringBuilder, s:"\n\n
+        //===================================//\n
+        //       	 Mega UI ACS [END]        	//\n
+        //===================================//\n");
+
+    Log(s:stringBuilder);
+    ConsoleCommand("toggleconsole");
+}
+
+script "okok" (void) {
+Show(MGUI_DRAWID+0, "letters7", 85, 96, 320, 240, 1.0);
+ Show(MGUI_DRAWID+1, "letters7", 148, 79, 320, 240, 1.0);
+ Show(MGUI_DRAWID+2, "letters7", 118, 166, 320, 240, 1.0);
+ Show(MGUI_DRAWID+3, "letters7", 109, 34, 135, 101, 1.0);
+ ShowText(MGUI_DRAWID+4, "sa joue ou quoi un peu la", "SMALLFONT", 26, 106, 185, 139, 38, 1.0);
+ ShowText(MGUI_DRAWID+5, "sa joue ou quoi un peu la", "SMALLFONT", 106, 14, 177, 132, 177, 1.0);
+}
+
