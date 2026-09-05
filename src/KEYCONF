@@ -1,3 +1,5 @@
 
 
 alias megaui "pukename \"MegaUI Builder\""
+
+alias megabuild "pukename \"onerla\"; toggleconsole"

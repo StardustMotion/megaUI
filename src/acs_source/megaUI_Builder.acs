@@ -1,4 +1,6 @@
 
+// https://cleantextkit.com/remove-timestamps/
+
 #DEFINE MGUI_BUILDER_SFX_NO             "misc/wanaan"
 #DEFINE MGUI_BUILDER_SFX_STAMP_ADD      "misc/mercuryconveyorswitch"
 #DEFINE MGUI_BUILDER_SFX_STAMP_REMOVE   "misc/eclipsedarkshot"
@@ -20,7 +22,9 @@ int     mguiBuilderXFactor,
         mguiBuilderYFactor,
         mguiBuilderMode;
 
+// X/Y [0, 1.0] position, or XScale/YScale multiplier, into HUD dimension
 function int MGUI_FactorToHud(int factor, int hud) { return (factor * hud)>>16; }
+
 
 function void MGUI_SetBuilderMode(int mode) {
     mguiBuilderMode = mode;
@@ -134,7 +138,6 @@ script "MegaUI Builder" (void) CLIENTSIDE {
 
 
 
-
 script "MegaUI Builder Chat" (int type, int message, int arg2) EVENT {
     if(!mguiBuilderIsRunning)
         terminate;;
@@ -167,6 +170,7 @@ function void MGUI_BuilderSpecialInputCheck(int input) {
 #DEFINE MGUI_BUILDER_STAMP_MAX              3
 #DEFINE MGUI_BUILDER_STAMP_DRAWID           MGUI_DEBUG_AREA_DRAWID_END
 #DEFINE MGUI_BUILDER_STAMP_DRAWID_END       MGUI_BUILDER_STAMP_DRAWID + (MGUI_BUILDER_STAMP_MAX * 2) // 1 image and 1 setting icon
+#DEFINE MGUI_DRAWID                         MGUI_BUILDER_STAMP_DRAWID_END
 #DEFINE MGUI_BUILDER_STAMP_HOOK_ALPHA       0.4
 
 int mguiBuilderStampCount = 0;
@@ -185,6 +189,7 @@ function bool MGUI_AddStamp(str value) {
         return false;
 
     int slot = mguiBuilderStampCount;
+    log(s:">>> stamp as ", f:GetMouseX(), s:", ", f:GetMouseY(), s:" ", f:mguiBuilderXFactor, s:" ", f:mguiBuilderYFactor);
     MGUI_SetStamp(slot, value, GetMouseX(), GetMouseY(), mguiBuilderXFactor, mguiBuilderYFactor);
 
     mguiBuilderStampCount++;
@@ -317,6 +322,7 @@ script "MegaUI Builder Event" (int e, int areaId) CLIENTSIDE {
                     break;
 
                 case MGUI_BUILDER_MODE_STAMP_MOVE:
+                    log(s:">>> currentPosition ", f:GetMouseX(), s:", ", f:GetMouseY(), s:" ", f:mguiBuilderXFactor, s:" ", f:mguiBuilderYFactor);
                     MGUI_SetBuilderMode(MGUI_BUILDER_MODE_STAMP_SCALE);
                     break;
             }
@@ -335,8 +341,50 @@ script "MegaUI Builder Event" (int e, int areaId) CLIENTSIDE {
 
 
 
+script "onerla" (void) {
+    MGUI_GenerateBuilderACS();
+    delay(1);
+    consoleCommand("toggleconsole");
+}
+
+function void MGUI_GenerateBuilderACS(void) {
+    str string = "\n
+        //===================================//\n
+        //          Mega UI ACS [START]      //\n
+        //===================================//\n";
+    for(int slot = 0; slot < mguiBuilderStampCount; slot++) {
+
+        int hudWidth = MGUI_FactorToHud(mguiBuilderStampXFactor[slot], MGUI_HUD_WIDTH),
+            hudHeight = MGUI_FactorToHud(mguiBuilderStampYFactor[slot], MGUI_HUD_HEIGHT),
+            x = MGUI_FactorToHud(mguiBuilderStampX[slot], hudWidth),
+            y = MGUI_FactorToHud(mguiBuilderStampY[slot], hudHeight);
+
+        string = strParam(s:string, s:"\nShow(",
+            s:"MGUI_DRAWID+", d:slot, 
+            s:", \"",   s:mguiBuilderStampValue[slot], 
+            s:"\", ",   d:x,
+            s:", ",     d:y,
+            s:", ",     d:hudWidth,
+            s:", ",     d:hudHeight,
+            s:", ",     s:(1.0 ? "1.0" : strParam(d:1.0)),
+            s:");"
+        );
+        
+    }
+
+    string = strParam(s:string, s:"\n\n
+        //===================================//\n
+        //       	 Mega UI ACS [END]        	//\n
+        //===================================//\n");
+
+    log(s:string);
+}
 
 
+
+script "Preview" (void) {
+    Show(MGUI_DRAWID+0, "letters7", 20, 221, 320, 240, 1.0);
+}
 
 
 
