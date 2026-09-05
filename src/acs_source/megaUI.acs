@@ -17,13 +17,13 @@
         > width and height represents a graphic's dimensions
         > hudWidth and hudHeight represents SetHudSize's "scaling" width/height parameters
 */
-
+int cropX, cropY, cropWidth, cropHeight;
 // -------------------------------------------------------------------------------------------
 //      Core API
 // -------------------------------------------------------------------------------------------
 
 // Displays warning/error logs, and display mouse areas for mouse menu
-#DEFINE MGUI_DEBUG 1
+#DEFINE MGUI_DEBUG 0
 
 // The n-th Draw's rendering has ABOVE priority than the (n-1)th Draw.
 
@@ -33,8 +33,8 @@ function void Draw(str graphic, int x, int y, int hudWidth, int hudHeight, int a
 }
 
 // Renders text on screen for 1 tic only
-function void DrawText(str text, str font, int x, int y, int hudWidth, int hudHeight, int alpha) {
-    ShowText(0, text, font, x, y, hudWidth, hudHeight, alpha);
+function void DrawText(str text, str font, int x, int y, int hudWidth, int hudHeight, int wrap, int alpha) {
+    ShowText(0, text, font, x, y, hudWidth, hudHeight, wrap, alpha);
 }
 
 // Renders a graphic on screen, until removed with Hide(id)
@@ -43,8 +43,10 @@ function void Show(int id, str graphic, int x, int y, int hudWidth, int hudHeigh
 }
 
 // Renders text on screen, until removed with Hide(id)
-function void ShowText(int id, str text, str font, int x, int y, int hudWidth, int hudHeight, int alpha) {
+function void ShowText(int id, str text, str font, int x, int y, int hudWidth, int hudHeight, int wrap, int alpha) {
+    if(wrap) SetHudClipRect(-0x7FFF, -0x7FFF, 0xFFFE, 0xFFFE, wrap);
     MGUI_DrawCore(id, text, font, x, y, hudWidth, hudHeight, alpha);
+    if(wrap) SetHudClipRect(cropX, cropY, cropWidth, cropHeight);
 }
 
 // Remove a rendered thing from screen (drawn with Draw/DrawText)
@@ -54,12 +56,16 @@ function void Hide(int id) {
 
 // A more natural name for SetHudClipRect
 function void Crop(int left, int top, int width, int height, int hudWidth) { 
-    SetHudClipRect((MGUI_ToVirtualX(left+(width>>1), hudWidth)>>16)-(width>>1), // Virtual wide screen X conversion
-            top, width, height, 0);
+    cropX = (MGUI_ToVirtualX(left+(width>>1), hudWidth)>>16)-(width>>1), // Virtual wide screen X conversion
+    cropY = top,
+    cropWidth = width,
+    cropHeight = height;
+    SetHudClipRect(cropX, cropY, cropWidth, cropHeight, 0);
 }
 
 // Stop previous Crop()'s effect
 function void Uncrop(void) { 
+    cropX = 0, cropY = 0, cropWidth = 0, cropHeight = 0;
     SetHudClipRect(0, 0, 0, 0, 0); 
 }
 
@@ -217,7 +223,7 @@ function bool MGUI_StartMouseMenu(str scriptName) {
         return false;
     }
     else if(mguiIsMouseMenuOpen) {
-        MGUI_Log("Warning : tried to open Mouse Menu while it was already active. Maybe a mod is using it already.");
+        MGUI_Log("Warning : tried to open Mouse Menu while one was already active.");
         return false;
     }
     mguiIsMouseMenuOpen =   true; 
@@ -256,7 +262,8 @@ function int MGUI_MouseAPI(int type, int value) {
 
 function void MGUI_SetMouseArea(int areaId, int x, int y, int width, int height, int hudWidth, int hudHeight) { 
     if(areaId == MGUI_AREA_NULL) {
-        MGUI_Log(strParam(s:"Warning : tried to register area with areaId = ", d:MGUI_AREA_NULL, s:". It's the areaId used for the null area ; it can't be used.."));
+        MGUI_Log(strParam(s:"Warning : tried to register mouse area with areaId = ", d:MGUI_AREA_NULL, 
+            s:". It's the id used for the null area ; you can not use it."));
         return;
     }
     int slot = -1;
@@ -268,7 +275,7 @@ function void MGUI_SetMouseArea(int areaId, int x, int y, int width, int height,
     }
     if(slot == -1) {
         if(mguiMouseAreaCount == MGUI_MOUSE_AREA_MAX) {
-            MGUI_Log(strParam(s:"Warning : can't register area, the ", d:MGUI_MOUSE_AREA_MAX, s:" limit is reached!"));
+            MGUI_Log(strParam(s:"Warning : can't register mouse area, the ", d:MGUI_MOUSE_AREA_MAX, s:" limit is reached!"));
             return;
         }
         else {

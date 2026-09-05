@@ -3,7 +3,7 @@
 	"libraries": [
 		"8BDMDEFS.acs", "8BDMMATH.acs", "8BDT.acs", "ASSTLIB.acs", "BARLIB.acs", "DTADD.acs", "PICKRPLC.acs",
 
-		"megaUI.acs", "megaUI_Builder.acs"
+		"megaUI.acs", "megaUI_Editor.acs"
 	],
 	"file_name": "megaUI",
 	"version": "1.0.0"

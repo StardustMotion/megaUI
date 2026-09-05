@@ -1,5 +1,4 @@
 
 
-alias megaui "pukename \"MegaUI Builder\""
-
-alias megabuild "pukename \"onerla\"; toggleconsole"
+alias megaui "pukename \"MegaUI Editor\""
+alias megabuild "pukename \"MegaUI Build\"; toggleconsole"
