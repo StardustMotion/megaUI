@@ -23,7 +23,7 @@ int cropX, cropY, cropWidth, cropHeight;
 // -------------------------------------------------------------------------------------------
 
 // Displays warning/error logs, and display mouse areas for mouse menu
-#DEFINE MGUI_DEBUG 0
+#DEFINE MGUI_DEBUG 1
 
 // The n-th Draw's rendering has ABOVE priority than the (n-1)th Draw.
 

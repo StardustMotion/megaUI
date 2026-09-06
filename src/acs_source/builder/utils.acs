@@ -3,9 +3,7 @@
 //      Misc / utils
 // -------------------------------------------------------------------------------------------
 
-// Brush types
-#DEFINE MGUI_EDITOR_BRUSH_GRAPHIC       0
-#DEFINE MGUI_EDITOR_BRUSH_TEXT          1
+
 
 
 function void MGUIEditor_Log(str message) { 

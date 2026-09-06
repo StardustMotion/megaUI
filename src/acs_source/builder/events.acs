@@ -1,0 +1,321 @@
+
+// Catch left/right click events (Mouse menu callback script)
+script "MegaUI Editor Event" (int e, int areaId) CLIENTSIDE {
+    switch(e) {
+
+        // Mouse enters area
+        case MGUI_EVENT_ENTER:
+            MGUIEditor_DrawStampHook(areaId, MGUI_EDITOR_HOOK_FOCUSED);
+            break;
+
+        // Mouse exits area
+        case MGUI_EVENT_EXIT:
+            MGUIEditor_DrawStampHook(areaId, MGUI_EDITOR_HOOK_IDLE);
+            break;
+
+        // Left click down
+        case MGUI_EVENT_DOWN:
+            switch(mguiEditorMode) {
+
+                case MGUI_EDITOR_MODE_SELECT:
+                    if(areaId != MGUI_AREA_NULL) {
+                        int slot = MGUIEditor_GetSlotFromStampId(areaId);
+                        MGUIEditor_SetMouseBrush(
+                            mguiEditorStampType[slot],
+                            mguiEditorStampContent[slot],
+                            mguiEditorStampFont[slot],
+                            mguiEditorStampXFactor[slot],
+                            mguiEditorStampYFactor[slot],
+                            mguiEditorStampWrap[slot],
+                            mguiEditorStampAlpha[slot]);
+                        MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_MOVE, true);
+                        MGUIEditor_DeleteStamp(areaId);
+                    }
+                    break;
+
+                case MGUI_EDITOR_MODE_BRUSH_MOVE:
+                    MGUIEditor_SetStamp(mguiEditorStampCount, mguiEditorMouseType, mguiEditorMouseContent, mguiEditorMouseFont, 
+                        GetMouseX(), GetMouseY(), mguiEditorMouseXFactor, mguiEditorMouseYFactor, mguiEditorMouseWrap, mguiEditorMouseAlpha);
+                    mguiEditorStampCount++;
+                    MGUIEditor_Play(MGUI_EDITOR_SFX_STAMP_ADD);
+                    MGUIEditor_SetMode(MGUI_EDITOR_MODE_SELECT, true);
+                    break;
+            }
+            break;
+
+        // Right click press
+        case MGUI_EVENT_ALT_DOWN:
+            switch(mguiEditorMode) {
+
+                case MGUI_EDITOR_MODE_SELECT: 
+                    if(areaId != MGUI_AREA_NULL) {
+                        MGUIEditor_Play(MGUI_EDITOR_SFX_STAMP_REMOVE);
+                        MGUIEditor_DeleteStamp(areaId);
+                    }
+                    break;
+
+                case MGUI_EDITOR_MODE_BRUSH_MOVE:
+                    MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_HUD, true);
+                    break;
+            }
+            break;
+
+        // Right click release
+        case MGUI_EVENT_ALT_UP:
+            if(mguiEditorMode==MGUI_EDITOR_MODE_BRUSH_HUD)
+                MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_MOVE, true);
+            break;
+
+    }
+}
+
+#DEFINE MGUI_EDITOR_CHAT_MODE_IDLE  0
+#DEFINE MGUI_EDITOR_CHAT_MODE_FONT  1
+int mguiEditor_ChatMode = MGUI_EDITOR_CHAT_MODE_IDLE;
+
+script "MegaUI Editor Chat" (int type, int message, int arg2) EVENT {
+    if(!mguiEditorIsRunning)
+        terminate;
+    if (type == GAMEEVENT_CHAT) {
+        message = GetChatMessage(message, 0);
+        switch(mguiEditor_ChatMode) {
+
+            case MGUI_EDITOR_CHAT_MODE_IDLE:
+                if(mguiEditorStampCount == MGUI_EDITOR_STAMP_MAX) {
+                    MGUIEditor_Play(MGUI_EDITOR_SFX_NO);
+                    MGUIEditor_Log(strParam(s:"Error : stamp limit of ", d:MGUI_EDITOR_STAMP_MAX, s:" reached!!"));
+                }
+                else {
+                    MGUIEditor_SetMouseBrush(
+                        MGUI_EDITOR_STAMP_GRAPHIC,
+                        message,
+                        mguiEditorMouseFont,
+                        mguiEditorMouseXFactor,
+                        mguiEditorMouseYFactor,
+                        mguiEditorMouseWrap,
+                        1.0);
+                    MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_MOVE, false);
+                }
+                break;
+
+            case MGUI_EDITOR_CHAT_MODE_FONT:
+                if(!CheckFont(message))
+                    MGUIEditor_ShowBanner(strParam(s:"Warning : font ", s:message, s:" does not exist!"));
+                else
+                    mguiEditorMouseFont = message;
+                mguiEditor_ChatMode = MGUI_EDITOR_CHAT_MODE_IDLE;
+                break;
+        }
+    }
+}
+
+#DEFINE MGUI_EDITOR_KEY_HOLD_DURATION   12
+#DEFINE MGUI_EDITOR_KEY_UP              0
+#DEFINE MGUI_EDITOR_KEY_DOWN            1
+#DEFINE MGUI_EDITOR_KEY_LEFT            2
+#DEFINE MGUI_EDITOR_KEY_RIGHT           3
+#DEFINE MGUI_EDITOR_KEY_RELOAD          4
+#DEFINE MGUI_EDITOR_KEY_SCORE           5
+int mguiEditorKeyState[6];
+
+function bool MGUIEditor_IsKeyHeld(int key, int duration) { return mguiEditorKeyState[key] >= (duration ? duration : MGUI_EDITOR_KEY_HOLD_DURATION); }
+
+// Catch buttons press events (except from left/right click)
+function void MGUIEditor_CheckInput(void) {
+    int input = GetPlayerInput(-1, INPUT_BUTTONS);
+    int prevInput = GetPlayerInput(-1, INPUT_OLDBUTTONS);
+    int pressedInput = (input ^ prevInput) & ~prevInput;
+
+
+    switch(mguiEditorMode) {
+        // Select mode 
+        case MGUI_EDITOR_MODE_SELECT:
+
+            // Select <=> Mouse area 
+            if(pressedInput & BT_RELOAD) {
+                MGUIEditor_SetMouseBrush(
+                    MGUI_EDITOR_STAMP_MOUSE_AREA,
+                    mguiEditorMouseContent,
+                    mguiEditorMouseFont,
+                    mguiEditorMouseXFactor,
+                    mguiEditorMouseYFactor,
+                    mguiEditorMouseWrap,
+                    1.0);
+                MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_MOVE, false);
+            }
+            break;
+
+        // Any brush mode
+        case MGUI_EDITOR_MODE_BRUSH_MOVE:
+        case MGUI_EDITOR_MODE_BRUSH_HUD:
+        case MGUI_EDITOR_MODE_BRUSH_JUMP:
+        case MGUI_EDITOR_MODE_BRUSH_CROUCH:
+
+            if(MGUIEditor_IsKeyHeld(MGUI_EDITOR_KEY_SCORE, 0) 
+                && !MGUIEditor_IsKeyHeld(MGUI_EDITOR_KEY_SCORE, MGUI_EDITOR_KEY_HOLD_DURATION+1)) {
+                MGUIEditor_Play(MGUI_EDITOR_SFX_RESET);
+                MGUIEditor_SetDefaultMouseBrush();
+                MGUIEditor_ShowBanner("Brush settings were reset");
+                break;
+            }
+
+            if(mguiEditorMouseType==MGUI_EDITOR_STAMP_MOUSE_AREA && (pressedInput & BT_RELOAD)) {
+                MGUIEditor_SetMode(MGUI_EDITOR_MODE_SELECT, false);
+                break;
+            }
+
+            // Text stamp specific
+            if(mguiEditorMouseType==MGUI_EDITOR_STAMP_TEXT) {
+                
+                if(MGUIEditor_IsKeyHeld(MGUI_EDITOR_KEY_RELOAD, 0)) {
+                    // Font change
+                    if(mguiEditor_ChatMode != MGUI_EDITOR_CHAT_MODE_FONT) {
+                        MGUIEditor_Play(MGUI_EDITOR_SFX_RESET);
+                        MGUIEditor_ShowBanner("Type the font name in chat");
+                        mguiEditor_ChatMode = MGUI_EDITOR_CHAT_MODE_FONT;
+                        break;
+                    }
+                }
+                // Text wrap mode on/off
+                else if((input & BT_CROUCH) ^ (prevInput & BT_CROUCH)) {
+                    if(input&BT_CROUCH)
+                        MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_CROUCH, true);
+                    else
+                        MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_MOVE, true);
+                
+                }
+            }
+
+            if((mguiEditorMouseType==MGUI_EDITOR_STAMP_TEXT) | (mguiEditorMouseType==MGUI_EDITOR_STAMP_GRAPHIC)) {
+                // Graphic <-> text toggle
+                if(!(input & BT_RELOAD) && (prevInput & BT_RELOAD) 
+                    && !(mguiEditorMouseType==MGUI_EDITOR_STAMP_TEXT && MGUIEditor_IsKeyHeld(MGUI_EDITOR_KEY_RELOAD, 0))) {
+                    MGUIEditor_SetMouseBrush((mguiEditorMouseType==MGUI_EDITOR_STAMP_GRAPHIC ? MGUI_EDITOR_STAMP_TEXT : MGUI_EDITOR_STAMP_GRAPHIC), 
+                        mguiEditorMouseContent, mguiEditorMouseFont, 
+                        mguiEditorMouseXFactor, mguiEditorMouseYFactor, mguiEditorMouseWrap, mguiEditorMouseAlpha);
+                    MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_MOVE, false);
+                    break;
+                }
+            }
+
+            // Alpha (graphic/text) ; size (mouse area)
+            if((input & BT_JUMP) ^ (prevInput & BT_JUMP)) {
+                if(input & BT_JUMP)
+                    MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_JUMP, true);
+                else
+                    MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_MOVE, true);
+                break;
+            }
+
+            // Toggle uniform scale
+            if(!(input & BT_SHOWSCORES) && (prevInput & BT_SHOWSCORES) && !MGUIEditor_IsKeyHeld(MGUI_EDITOR_KEY_SCORE, 0)) {
+                MGUIEditor_Play(MGUI_EDITOR_SFX_TOGGLE);
+                mguiEditorMouseIsUniformScale = !mguiEditorMouseIsUniformScale;
+                MGUIEditor_ShowBanner(strParam(s:"Keep scale aspect ratio ", s:mguiEditorMouseIsUniformScale ? MGUI_EDITOR_TEXT_ON : MGUI_EDITOR_TEXT_OFF));
+                break;
+            }
+
+            // Mouse delta / WASD calc section
+            int w = (pressedInput & BT_FORWARD)     | MGUIEditor_IsKeyHeld(MGUI_EDITOR_KEY_UP, 0),
+                s = (pressedInput & BT_BACK)        | MGUIEditor_IsKeyHeld(MGUI_EDITOR_KEY_DOWN, 0),
+                a = (pressedInput & BT_MOVELEFT)    | MGUIEditor_IsKeyHeld(MGUI_EDITOR_KEY_LEFT, 0),
+                d = (pressedInput & BT_MOVERIGHT)   | MGUIEditor_IsKeyHeld(MGUI_EDITOR_KEY_RIGHT, 0);
+            
+            switch(mguiEditorMode) {
+                
+                // Position
+                case MGUI_EDITOR_MODE_BRUSH_MOVE:
+                    int tmp = FixedDiv(MGUI_EDITOR_MOUSE_DELTA, mguiEditorMouseXFactor);
+                    if(a)           SetMouseX(GetMouseX()-tmp);
+                    else if(d)      SetMouseX(GetMouseX()+tmp);
+                    tmp = FixedDiv(MGUI_EDITOR_MOUSE_DELTA, mguiEditorMouseYFactor);
+                    if(w)           SetMouseY(GetMouseY()-tmp);
+                    else if(s)      SetMouseY(GetMouseY()+tmp);
+                    break;
+ 
+                // Hud scaling
+                case MGUI_EDITOR_MODE_BRUSH_HUD:
+                    int mouseX = GetRawMouseDeltaX()<<4;
+                    int mouseY = GetRawMouseDeltaY()<<4;
+
+                    // >>> Up/left
+                    if((mouseX > 0) | (mouseY > 0)) {
+                        if(mguiEditorMouseIsUniformScale) {
+                            tmp = MGUI_Max(mouseX, mouseY);
+                            mguiEditorMouseXFactor = FixedMul(mguiEditorMouseXFactor, 1.0 + tmp);
+                            mguiEditorMouseYFactor = FixedMul(mguiEditorMouseYFactor, 1.0 + tmp);
+                        }
+                        else {
+                            if(mouseX > 0)  mguiEditorMouseXFactor = FixedMul(mguiEditorMouseXFactor, 1.0 + mouseX);
+                            if(mouseY > 0)  mguiEditorMouseYFactor = FixedMul(mguiEditorMouseYFactor, 1.0 + mouseY);
+                        }
+                    }
+
+                    // >>> Down/right
+                    else if((mouseX < 0) | (mouseY < 0)) {
+                        if(mguiEditorMouseIsUniformScale) {
+                            tmp = MGUI_Min(mouseX, mouseY);
+                            mguiEditorMouseXFactor = FixedDiv(mguiEditorMouseXFactor, 1.0 - tmp);
+                            mguiEditorMouseYFactor = FixedDiv(mguiEditorMouseYFactor, 1.0 - tmp);
+                        }
+                        else {
+                            if(mouseX < 0)  mguiEditorMouseXFactor = FixedDiv(mguiEditorMouseXFactor, 1.0 - mouseX);
+                            if(mouseY < 0)  mguiEditorMouseYFactor = FixedDiv(mguiEditorMouseYFactor, 1.0 - mouseY);
+                        }
+                    }
+
+                    // Keyboard
+                    mouseX = 1.0+FixedDiv(MGUI_EDITOR_SCALE_DELTA, mguiEditorMouseXFactor),
+                    mouseY = 1.0+FixedDiv(MGUI_EDITOR_SCALE_DELTA, mguiEditorMouseYFactor);
+                    if(a | w) {
+                        if(a | mguiEditorMouseIsUniformScale)
+                            mguiEditorMouseXFactor = FixedMul(mguiEditorMouseXFactor, mouseX);
+                        if(w | mguiEditorMouseIsUniformScale)         
+                            mguiEditorMouseYFactor = FixedMul(mguiEditorMouseYFactor, mouseY);
+                    }
+                    else if(d | s) {
+                        if(d | mguiEditorMouseIsUniformScale)         
+                            mguiEditorMouseXFactor = FixedDiv(mguiEditorMouseXFactor, mouseX);
+                        if(s | mguiEditorMouseIsUniformScale)         
+                            mguiEditorMouseYFactor = FixedDiv(mguiEditorMouseYFactor, mouseY);
+                    }
+                    break;
+
+                // Alpha (graphic/text) ; size (mouse area)
+                case MGUI_EDITOR_MODE_BRUSH_JUMP:
+                    if(mguiEditorMouseType==MGUI_EDITOR_STAMP_MOUSE_AREA) {
+                    }
+                    else {
+                        tmp = GetRawMouseDeltaX()<<1;
+                        if(tmp)         mguiEditorMouseAlpha = MGUI_Clamp(mguiEditorMouseAlpha-tmp, 0.01, 1.0);
+                        if(a)           mguiEditorMouseAlpha = MGUI_Max(mguiEditorMouseAlpha-MGUI_EDITOR_ALPHA_DELTA, 0.00);
+                        else if(d)      mguiEditorMouseAlpha = MGUI_Min(mguiEditorMouseAlpha+MGUI_EDITOR_ALPHA_DELTA, 1.0);
+                    }
+                    break;
+                
+                // Wrap (text)
+                case MGUI_EDITOR_MODE_BRUSH_CROUCH:
+                    tmp = GetRawMouseDeltaX()<<2;
+                    if(tmp)         mguiEditorMouseWrap = MGUI_Clamp(mguiEditorMouseWrap-tmp, 0.01, 1.0);
+                    tmp = FixedDiv(MGUI_EDITOR_WRAP_DELTA, mguiEditorMouseXFactor);
+                    if(a)           mguiEditorMouseWrap = MGUI_Max(mguiEditorMouseWrap-tmp, 0.01);
+                    else if(d)      mguiEditorMouseWrap = MGUI_Min(mguiEditorMouseWrap+tmp, 1.0);
+                    break;
+            
+            }
+
+            break;
+    }
+
+
+    // Update 
+    mguiEditorKeyState[MGUI_EDITOR_KEY_UP] = (input & BT_FORWARD) ? mguiEditorKeyState[MGUI_EDITOR_KEY_UP]+1 : 0;
+    mguiEditorKeyState[MGUI_EDITOR_KEY_DOWN] = (input & BT_BACK) ? mguiEditorKeyState[MGUI_EDITOR_KEY_DOWN]+1 : 0;
+    mguiEditorKeyState[MGUI_EDITOR_KEY_LEFT] = (input & BT_MOVELEFT) ? mguiEditorKeyState[MGUI_EDITOR_KEY_LEFT]+1 : 0;
+    mguiEditorKeyState[MGUI_EDITOR_KEY_RIGHT] = (input & BT_MOVERIGHT) ? mguiEditorKeyState[MGUI_EDITOR_KEY_RIGHT]+1 : 0;
+    mguiEditorKeyState[MGUI_EDITOR_KEY_RELOAD] = (input & BT_RELOAD) ? mguiEditorKeyState[MGUI_EDITOR_KEY_RELOAD]+1 : 0;
+    mguiEditorKeyState[MGUI_EDITOR_KEY_SCORE] = (input & BT_SHOWSCORES) ? mguiEditorKeyState[MGUI_EDITOR_KEY_SCORE]+1 : 0;
+
+}
+
+

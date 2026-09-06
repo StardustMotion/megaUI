@@ -1,7 +1,7 @@
 #library "_mguiBld"
 
 #include "zcommon.acs"
-#include "libs/megaUI.acs"
+#include "../megaUI.acs"
 
 #include "utils.acs"
 #include "defs.acs"
