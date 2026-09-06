@@ -1,0 +1,15 @@
+[19:22:55] Log started: out__2026_09_06-19_22_55.log, Sun Sep  6 19:22:55 2026
+[19:22:56] ]megabuild
+[19:22:56] 
+[19:22:56]           //===================================//
+[19:22:56]           //          Mega UI ACS [START]      //
+[19:22:56]           //===================================//
+[19:22:56] 
+[19:22:56] ShowText(MGUI_DRAWID+0, "letters7letters7letters7letters7letters7letters7letters7letters7letters7letters7letters7letters7letters7letters7letters7lette", "SMALLFONT", 205, 25, 423, 126, 299, 1.0);
+[19:22:56] 
+[19:22:56]           //===================================//
+[19:22:56]           //         Mega UI ACS [END]         //
+[19:22:56]           //===================================//
+[19:22:56] 
+[19:22:58] ]logfile
+[19:22:58] Log stopped: out__2026_09_06-19_22_55.log, Sun Sep  6 19:22:58 2026

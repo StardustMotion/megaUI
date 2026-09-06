@@ -6,6 +6,7 @@
 		"megaUI.acs", 
 
 		"utils.acs",
+		"defs.acs",
 		"stamps.acs",
 		"editor.acs",
 		"events.acs",

@@ -23,7 +23,7 @@ int cropX, cropY, cropWidth, cropHeight;
 // -------------------------------------------------------------------------------------------
 
 // Displays warning/error logs, and display mouse areas for mouse menu
-#DEFINE MGUI_DEBUG 1
+#DEFINE MGUI_DEBUG 0
 
 // The n-th Draw's rendering has ABOVE priority than the (n-1)th Draw.
 
@@ -189,7 +189,13 @@ script "MegaUI Mouse Menu" (void) CLIENTSIDE {
                 : MGUI_EVENT_ALT_UP, area);
         if(area != prevArea) {
             if(area != MGUI_AREA_NULL)      ACS_NamedExecuteWithResult(mguiMouseScript, MGUI_EVENT_ENTER, area);
-            if(prevArea != MGUI_AREA_NULL)  ACS_NamedExecuteWithResult(mguiMouseScript, MGUI_EVENT_EXIT, prevArea);
+            if(prevArea != MGUI_AREA_NULL)  {
+                for(int i = 0; i < mguiMouseAreaCount; i++)
+                    if(mguiMouseAreaIds[i] == prevArea) {
+                        ACS_NamedExecuteWithResult(mguiMouseScript, MGUI_EVENT_EXIT, prevArea);
+                        break;
+                    }
+            }
             prevArea = area;
         }
 
@@ -314,7 +320,7 @@ function int MGUI_GetMouseAreaId(void) {
 }
 
 function void MGUI_DeleteMouseArea(int areaId) {
-    for(int i = 0; i < MGUI_MOUSE_AREA_MAX; i++) {
+    for(int i = 0; i < mguiMouseAreaCount; i++) {
         if(mguiMouseAreaIds[i] == areaId) {
             for(int j = i; j <= mguiMouseAreaCount; j++) {
                 mguiMouseAreaIds[j] =   mguiMouseAreaIds[j+1];

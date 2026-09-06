@@ -2,3 +2,4 @@
 
 alias megaui "pukename \"MegaUI Editor\"; toggleconsole"
 alias megabuild "pukename \"MegaUI Build\"; toggleconsole"
+alias megahelp "pukename \"MegaUI Help\"; toggleconsole"

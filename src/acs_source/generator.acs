@@ -5,7 +5,6 @@
 
 // https://cleantextkit.com/remove-timestamps/
 
-#DEFINE MGUI_DRAWID                        MGUI_EDITOR_STAMP_DRAWID_END
 
 script "MegaUI Build" (void) CLIENTSIDE {
     if(!mguiEditorIsRunning) {
@@ -27,7 +26,7 @@ script "MegaUI Build" (void) CLIENTSIDE {
             hudHeight = MGUIEditor_ToHud(mguiEditorStampYFactor[slot], MGUI_HUD_HEIGHT),
             x = MGUIEditor_ToHud(mguiEditorStampX[slot], hudWidth),
             y = MGUIEditor_ToHud(mguiEditorStampY[slot], hudHeight);
-        str alpha = mguiEditorStampAlpha[slot] == 1.0 ? "1.0" : mguiEditorStampAlpha[slot];
+        str alpha = mguiEditorStampAlpha[slot] == 1.0 ? "1.0" : strParam(f:mguiEditorStampAlpha[slot]);
 
 
         // Graphic stamp

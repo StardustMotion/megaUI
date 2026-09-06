@@ -13,6 +13,8 @@
 
 bool    mguiEditorIsRunning;
 int     mguiEditorMode;
+str     mguiBannerText;
+int     mguiBannerTimer;
 
 // Brush state
 str     mguiEditorBrushContent,
@@ -29,43 +31,100 @@ script "MegaUI Editor" (void) CLIENTSIDE {
         terminate;
     mguiEditorIsRunning = true;
     mguiEditorIsUniformScale = true;
+    mguiEditorBrushXFactor = 1.0;
+    mguiEditorBrushYFactor = 1.0;
     mguiEditorBrushFont = "SMALLFONT";
     SetPlayerProperty(0, 1, PROP_TOTALLYFROZEN);
     MGUIEditor_SetMode(MGUI_EDITOR_MODE_SELECT);
     int x, y, hudWidth, hudHeight;
+
+    for(x = 0; x <= 27; x++) {
+        Show(MGUI_EDITOR_BACKGROUND_DRAWID, "MEGAUI_9", 55, 55, 110, 110, FixedMul(FixedDiv(x<<16, 27.0), 0.8));
+        delay(1);
+    }
+    log(l:"MGUI_EDITOR_OPEN");
+
+    if(FixedDiv(GetScreenHeight()<<16, GetScreenWidth()<<16) != 0.75) {
+        log(s:"\n\c[c5][ WARNING ] \c[r5]Your game resolution (\c[j5]", d:GetScreenWidth(), s:"x", d:GetScreenHeight(), 
+            s:"\c[r5]) ratio is not 4:3 (800x600, 1024x768, etc).\n\c[r5]Please design your UI on 4:3 resolution to avoid ",
+            s:"some out of screen issues for 4:3 players");
+    }
 
     // Main thread
     while(true) {
 
         MGUIEditor_CheckInput();
 
-        // Brush modes
-        if(     (mguiEditorMode==MGUI_EDITOR_MODE_MOVE) 
-            |   (mguiEditorMode==MGUI_EDITOR_MODE_SCALE) 
-            |   (mguiEditorMode==MGUI_EDITOR_MODE_WRAP)) {
+        // Banner info
+        if(mguiBannerTimer) {
+            DrawText(mguiBannerText, "SMALLFONT", 150, 25, 300, 126, 240, MGUI_Min((mguiBannerTimer<<16)/10, 1.0));
+            mguiBannerTimer--;
+        }
 
-            
-            // Draw the brush
+        // Help
+        if(GetUserCVar(PlayerNumber(), MGUI_EDITOR_HELP_CVAR)) {
+            str stringBuilder;
+            switch(mguiEditorMode) {
+                case MGUI_EDITOR_MODE_SELECT: stringBuilder = "MGUI_EDITOR_SELECT"; break;
+                case MGUI_EDITOR_MODE_MOVE: stringBuilder = "MGUI_EDITOR_MOVE"; break;
+                case MGUI_EDITOR_MODE_SCALE: stringBuilder = "MGUI_EDITOR_SCALE"; break;
+                case MGUI_EDITOR_MODE_ALPHA: stringBuilder = "MGUI_EDITOR_ALPHA"; break;
+                case MGUI_EDITOR_MODE_WRAP: stringBuilder = "MGUI_EDITOR_WRAP"; break;
+            }
+            DrawText(strParam(l:stringBuilder), "smallfont", 77, 210, 674, 314, 148, 1.0);
+        }
+
+        // Brush modes
+        if(MGUIEditor_InBrushMode()) {
             hudWidth = MGUIEditor_ToHud(mguiEditorBrushXFactor, MGUI_HUD_WIDTH), 
             hudHeight = MGUIEditor_ToHud(mguiEditorBrushYFactor, MGUI_HUD_HEIGHT),
             x = (GetMouseX()*hudWidth)>>16,
             y = (GetMouseY()*hudHeight)>>16;
 
+            stringBuilder = strParam( 
+                s:"\c[y5]", s:(mguiEditorBrushType==MGUI_EDITOR_BRUSH_GRAPHIC) ? StrLeft(mguiEditorBrushContent, 8) : "(TEXT)", s:"\n",
+                s:"\c[j5]Pos \cj[", d:x, s:", ", d:y, s:"]\n", 
+                s:"\c[o7]Hud \cj<", d:hudWidth, s:", ", d:hudHeight, s:">\n",
+                s:"\c[f2]Alpha \cj", d:(mguiEditorBrushAlpha*100)>>16, s:"%");
+            if(mguiEditorBrushType==MGUI_EDITOR_BRUSH_TEXT) {
+                int wrap = MGUIEditor_ToHud(mguiEditorBrushWrap, hudWidth);
+                stringBuilder = strParam(s:stringBuilder, s:"\n\c[05]Wrap \cj", d:wrap);
+            }
+                    
+            // Draw Inspector
+            DrawText(stringBuilder, "smallfont", 444, 196, 502, 223, 502, 0.85);
+
+            // Draw the brush
             switch(mguiEditorBrushType) {
                 case MGUI_EDITOR_BRUSH_TEXT:
-                    DrawText(mguiEditorBrushContent, mguiEditorBrushFont, x, y, hudWidth, hudHeight, 
-                        MGUIEditor_ToHud(mguiEditorBrushWrap, hudWidth), mguiEditorBrushAlpha);
+                    DrawText(mguiEditorBrushContent, mguiEditorBrushFont, x, y, hudWidth, hudHeight, wrap, mguiEditorBrushAlpha);
                     break;
                 case MGUI_EDITOR_BRUSH_GRAPHIC:
                     Draw(mguiEditorBrushContent, x, y, hudWidth, hudHeight, mguiEditorBrushAlpha);
                     break;
             }
+
         }
         delay(1);
     }
     SetPlayerProperty(0, 0, PROP_TOTALLYFROZEN);
     mguiEditorIsRunning = false;
     EndMouseMenu();
+}
+
+
+
+script "MegaUI Help" (void) { 
+    int player = PlayerNumber();
+    SetUserCVar(player, MGUI_EDITOR_HELP_CVAR, !GetUserCVar(player, MGUI_EDITOR_HELP_CVAR));
+    MGUIEditor_ShowBanner(strParam(s:"Help menu ", s:GetUserCVar(player, MGUI_EDITOR_HELP_CVAR) ? MGUI_EDITOR_TEXT_ON : MGUI_EDITOR_TEXT_OFF));
+    MGUIEditor_Play(MGUI_EDITOR_SFX_TOGGLE);
+}
+
+function bool MGUIEditor_InBrushMode(void) { return ((mguiEditorMode==MGUI_EDITOR_MODE_MOVE) 
+    | (mguiEditorMode==MGUI_EDITOR_MODE_SCALE) 
+    | (mguiEditorMode==MGUI_EDITOR_MODE_WRAP) 
+    | (mguiEditorMode==MGUI_EDITOR_MODE_ALPHA)); 
 }
 
 function void MGUIEditor_SetMode(int mode) {
@@ -82,6 +141,9 @@ function void MGUIEditor_SetMode(int mode) {
 
         case MGUI_EDITOR_MODE_WRAP:
             SetMouseCursor("MEGAUI_7"); SetMouseOffset(0, 0); SetMouseSpeed(0.0); break;
+
+        case MGUI_EDITOR_MODE_ALPHA:
+            SetMouseCursor("MEGAUI_8"); SetMouseOffset(0, 0); SetMouseSpeed(0.0); break;
     }
 }
 
@@ -95,4 +157,9 @@ function void MGUIEditor_ToBrush(int type, str content, int xFactor, int yFactor
     mguiEditorBrushFont = font;
     mguiEditorBrushWrap = (type==MGUI_EDITOR_BRUSH_GRAPHIC ? 0 : wrap);
     mguiEditorBrushAlpha = alpha;
+}
+
+function void MGUIEditor_ShowBanner(str text) {
+    mguiBannerTimer = 18+((StrLen(text)*5)/4);
+    mguiBannerText = strParam(s:"\c[p7]", s:text);
 }

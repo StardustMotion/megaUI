@@ -4,6 +4,7 @@
 #include "libs/megaUI.acs"
 
 #include "utils.acs"
+#include "defs.acs"
 #include "stamps.acs"
 #include "editor.acs"
 #include "events.acs"
