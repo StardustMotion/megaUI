@@ -4,7 +4,7 @@ MGUI_EDITOR_OPEN =
     "\n"
     "\c[r7]      ===================================\n"
     "\n"
-    "\c[r7]      ========= Mega UI Builder =========\n"
+    "\c[r7]      ========== Mega UI Editor =========\n"
     "\n"
     "\c[r7]      ===================================\n"
     "\n"
@@ -58,7 +58,7 @@ MGUI_EDITOR_STAMP_TEXT =
     "\c[q7]=> Aspect ratio\n"
 
     "\c[i0][ \c[c9]Hold\c[i0] Show score ]\n"
-    "\c[q7]=> Reset brush\n"
+    "\c[q7]=> Reset settings\n"
 
     "\c[i0][ Jump ]\n"
     "\c[q7]=> Alpha\n"
@@ -89,7 +89,7 @@ MGUI_EDITOR_STAMP_GRAPHIC =
     "\c[q7]=> Aspect ratio\n"
 
     "\c[i0][ \c[c9]Hold\c[i0] Show score ]\n"
-    "\c[q7]=> Reset brush\n"
+    "\c[q7]=> Reset settings\n"
 
     "\c[i0][ Jump ]\n"
     "\c[q7]=> Alpha\n"
@@ -117,7 +117,7 @@ MGUI_EDITOR_STAMP_MOUSE_AREA =
     "\c[q7]=> Aspect ratio\n"
 
     "\c[i0][ \c[c9]Hold\c[i0] Show score ]\n"
-    "\c[q7]=> Reset brush\n"
+    "\c[q7]=> Reset settings\n"
 
     "\c[i0][ Jump ]\n"
     "\c[q7]=> Size\n"

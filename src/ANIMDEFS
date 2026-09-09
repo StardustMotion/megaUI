@@ -1,10 +1,5 @@
 
-// Mouse highlighted
-texture MEGAUI_D
-	pic MEGAUI_C tics 1
+// Editor - Mouse highlighted
+texture MEGAUI_A
+	pic MEGAUI_9 tics 1
 	pic TNT1A0 tics 1
-
-// Stamped idle
-texture MEGAUI_F
-	pic MEGAUI_E tics 3
-	pic TNT1A0 tics 3

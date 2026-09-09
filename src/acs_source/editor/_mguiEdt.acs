@@ -1,0 +1,11 @@
+#library "_mguiEdt"
+
+#include "zcommon.acs"
+#include "../megaUI.acs"
+
+#include "common.acs"
+#include "stamps.acs"
+#include "editor.acs"
+#include "events.acs"
+#include "generator.acs"
+

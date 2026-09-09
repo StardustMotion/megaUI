@@ -1,0 +1,245 @@
+
+// -------------------------------------------------------------------------------------------
+//      Editor
+// -------------------------------------------------------------------------------------------
+
+#DEFINE MGUI_EDITOR_HELP_CVAR           "megaui_help"
+
+// Modes
+#DEFINE MGUI_EDITOR_MODE_SELECT             0
+#DEFINE MGUI_EDITOR_MODE_BRUSH_MOVE         1
+#DEFINE MGUI_EDITOR_MODE_BRUSH_HUD          2
+#DEFINE MGUI_EDITOR_MODE_BRUSH_JUMP         3
+#DEFINE MGUI_EDITOR_MODE_BRUSH_CROUCH       4
+
+#DEFINE MGUI_INSPECTOR_BOTTOM               0
+#DEFINE MGUI_INSPECTOR_TOP                  1
+
+// General state
+bool    mguiEditorIsRunning;
+int     mguiEditorMode;
+str     mguiBannerText;
+int     mguiBannerTimer;
+int     mguiInspectorPosition;
+
+// Mouse brush status
+int     mguiEditorMouseType,
+        mguiEditorMouseContent,
+        mguiEditorMouseFont,
+        mguiEditorMouseXFactor,
+        mguiEditorMouseYFactor,
+        mguiEditorMouseWrap,
+        mguiEditorMouseAlpha,
+        mguiEditorMouseSizeX,
+        mguiEditorMouseSizeY,
+        mguiEditorMouseIsUniformScale;
+
+script "MegaUI Editor" (void) CLIENTSIDE {
+    if(!StartMouseMenu("MegaUI Editor Event")) {
+        MGUIEditor_Log("MegaUI Editor is already running.");
+        MGUIEditor_Play(MGUI_SFX_ERROR);
+        terminate;
+    }
+    mguiEditorIsRunning = true;
+    mguiEditorMouseType = MGUI_EDITOR_STAMP_GRAPHIC;
+    MGUIEditor_SetDefaultMouseBrush();
+    MGUIEditor_SetInspectorPosition(MGUI_INSPECTOR_BOTTOM);
+    SetPlayerProperty(0, 1, PROP_TOTALLYFROZEN);
+    MGUIEditor_SetMode(MGUI_EDITOR_MODE_SELECT, true);
+    int x, y, hudWidth, hudHeight;
+
+    for(x = 0; x <= 27; x++) {
+        Show(MGUI_EDITOR_BACKGROUND_DRAWID, "MEGAUI_6", 55, 55, 110, 110, FixedMul(FixedDiv(x<<16, 27.0), 0.8));
+        delay(1);
+    }
+    Log(l:"MGUI_EDITOR_OPEN");
+
+    if(FixedDiv(GetScreenHeight()<<16, GetScreenWidth()<<16) != 0.75) {
+        MGUIEditor_Play(MGUI_SFX_ERROR);
+        MGUIEditor_Log(StrParam(s:"\n\c[c5][ WARNING ] \c[r5]Your game resolution (\c[j5]", d:GetScreenWidth(), s:"x", d:GetScreenHeight(), 
+            s:"\c[r5]) ratio is not 4:3 (800x600, 1024x768, etc).\n\c[r5]Please design your UI on 4:3 resolution to avoid ",
+            s:"some out of screen issues for 4:3 players"));
+    }
+
+    // Main thread
+    while(true) {
+
+        MGUIEditor_CheckInput();
+
+        // Banner info
+        if(mguiBannerTimer) {
+            DrawText(mguiBannerText, "SMALLFONT", 150, 25, 300, 126, 240, MGUI_Min((mguiBannerTimer<<16)/10, 1.0), 0);
+            mguiBannerTimer--;
+        }
+
+        // Help
+        if(GetUserCVar(PlayerNumber(), MGUI_EDITOR_HELP_CVAR)) {
+            str stringBuilder;
+            switch(mguiEditorMode) {
+
+                case MGUI_EDITOR_MODE_SELECT:           
+                    stringBuilder = "MGUI_EDITOR_SELECT"; 
+                    break;
+
+                case MGUI_EDITOR_MODE_BRUSH_MOVE:
+                    switch(mguiEditorMouseType) {
+                        case MGUI_EDITOR_STAMP_GRAPHIC:     stringBuilder = "MGUI_EDITOR_STAMP_GRAPHIC"; break;
+                        case MGUI_EDITOR_STAMP_TEXT:        stringBuilder = "MGUI_EDITOR_STAMP_TEXT"; break;
+                        case MGUI_EDITOR_STAMP_MOUSE_AREA:  stringBuilder = "MGUI_EDITOR_STAMP_MOUSE_AREA"; break;
+                    }
+                    break;
+
+                case MGUI_EDITOR_MODE_BRUSH_HUD:            
+                    stringBuilder = "MGUI_EDITOR_SCALE"; 
+                    break;
+
+                case MGUI_EDITOR_MODE_BRUSH_JUMP:
+                    if(mguiEditorMouseType==MGUI_EDITOR_STAMP_MOUSE_AREA)   stringBuilder = "MGUI_EDITOR_SIZE";
+                    else                                                    stringBuilder = "MGUI_EDITOR_ALPHA";
+                    break;
+
+                case MGUI_EDITOR_MODE_BRUSH_CROUCH:       
+                    stringBuilder = "MGUI_EDITOR_WRAP"; 
+                    break;
+            }
+            DrawText(StrParam(l:stringBuilder), "smallfont", 77, 210, 674, 314, 148, 0.8, 0);
+        }
+
+        // Stamp modes
+        if(mguiEditorMode != MGUI_EDITOR_MODE_SELECT) {
+            hudWidth = MGUIEditor_ToHud(mguiEditorMouseXFactor, MGUI_HUD_WIDTH), 
+            hudHeight = MGUIEditor_ToHud(mguiEditorMouseYFactor, MGUI_HUD_HEIGHT),
+            x = (GetMouseX()*hudWidth)>>16,
+            y = (GetMouseY()*hudHeight)>>16;
+
+            stringBuilder = "\c[y5]";
+            switch(mguiEditorMouseType) {
+                case MGUI_EDITOR_STAMP_GRAPHIC:     stringBuilder = StrParam(s:stringBuilder, s:StrLeft(mguiEditorMouseContent, 8)); break;
+                case MGUI_EDITOR_STAMP_TEXT:        stringBuilder = StrParam(s:stringBuilder, s:"[TEXT]"); break;
+                case MGUI_EDITOR_STAMP_MOUSE_AREA:  stringBuilder = StrParam(s:stringBuilder, s:"{AREA}"); break;
+            }
+
+            stringBuilder = StrParam(s:stringBuilder, s:"\n",
+                s:"\c[j5]Pos \cj[", d:x, s:", ", d:y, s:"]\n", 
+                s:"\c[o7]Hud \cj<", d:hudWidth, s:", ", d:hudHeight, s:">\n");
+            if((mguiEditorMouseType==MGUI_EDITOR_STAMP_GRAPHIC) | (mguiEditorMouseType==MGUI_EDITOR_STAMP_TEXT)) {
+                stringBuilder = StrParam(s:stringBuilder, s:"\c[f2]Alpha \cj", d:(mguiEditorMouseAlpha*100)>>16, s:"%");
+                if(mguiEditorMouseType==MGUI_EDITOR_STAMP_TEXT) {
+                    int wrap = MGUIEditor_ToHud(mguiEditorMouseWrap, hudWidth);
+                    stringBuilder = StrParam(s:stringBuilder, s:"\n\c[05]Wrap \cj", d:wrap);
+                }
+            }
+            else if(mguiEditorMouseType==MGUI_EDITOR_STAMP_MOUSE_AREA)
+                stringBuilder = StrParam(s:stringBuilder, s:"\c[f2]Size \cj", d:mguiEditorMouseSizeX, s:"x", d:mguiEditorMouseSizeY);
+                    
+            // Draw Inspector
+            DrawText(stringBuilder, "smallfont", 444, (mguiInspectorPosition == MGUI_INSPECTOR_BOTTOM ? 196 : 28), 502, 223, 502, 0.75, 0);
+
+            // Draw the stamp on mouse
+            switch(mguiEditorMouseType) {
+
+                case MGUI_EDITOR_STAMP_TEXT:
+                    DrawText(mguiEditorMouseContent, mguiEditorMouseFont, x, y, hudWidth, hudHeight, wrap, mguiEditorMouseAlpha, MGUI_CENTER);
+                    break;
+
+                case MGUI_EDITOR_STAMP_GRAPHIC:
+                    Draw(mguiEditorMouseContent, x, y, hudWidth, hudHeight, mguiEditorMouseAlpha);
+                    break;
+
+                case MGUI_EDITOR_STAMP_MOUSE_AREA:
+                    Crop(x-(mguiEditorMouseSizeX>>1), y-(mguiEditorMouseSizeY>>1), mguiEditorMouseSizeX, mguiEditorMouseSizeY, hudWidth);
+                    Draw("MEGAUI_A", x, y, hudWidth, hudHeight, MGUI_EDITOR_AREA_FLASH);
+                    Uncrop();
+                    break;
+            }
+
+        }
+        delay(1);
+    }
+    SetPlayerProperty(0, 0, PROP_TOTALLYFROZEN);
+    mguiEditorIsRunning = false;
+    EndMouseMenu();
+}
+
+script "MegaUI Help" (void) { 
+    int player = PlayerNumber();
+    SetUserCVar(player, MGUI_EDITOR_HELP_CVAR, !GetUserCVar(player, MGUI_EDITOR_HELP_CVAR));
+    MGUIEditor_ShowBanner(StrParam(s:"Help menu ", s:GetUserCVar(player, MGUI_EDITOR_HELP_CVAR) ? MGUI_EDITOR_TEXT_ON : MGUI_EDITOR_TEXT_OFF));
+    MGUIEditor_Play(MGUI_SFX_CONFIG);
+}
+
+function void MGUIEditor_SetMode(int mode, bool isSilent) {
+    mguiEditorMode = mode;
+    int graphic, offsetX, offsetY;
+    switch(mode) {
+        case MGUI_EDITOR_MODE_SELECT:
+            graphic = "MEGAUI_0";
+            offsetX = 6;
+            offsetY = 8;
+            SetMouseSpeed(1.0); 
+            MGUIEditor_SetHookRendering(true);
+            break;
+
+        case MGUI_EDITOR_MODE_BRUSH_MOVE:
+            graphic = "MEGAUI_1"; 
+            SetMouseSpeed(1.0); 
+            break;
+
+        case MGUI_EDITOR_MODE_BRUSH_HUD:
+            graphic = "MEGAUI_2"; 
+            SetMouseSpeed(0.0); 
+            break;
+
+        // Alpha (graphic/text) ; Size (mouse area)
+        case MGUI_EDITOR_MODE_BRUSH_JUMP:
+            graphic = (mguiEditorMouseType==MGUI_EDITOR_STAMP_MOUSE_AREA ? "MEGAUI_8" : "MEGAUI_5");   
+            SetMouseSpeed(0.0);
+            break;
+
+        // Wrap (text)
+        case MGUI_EDITOR_MODE_BRUSH_CROUCH:
+            graphic = "MEGAUI_4";
+            SetMouseSpeed(0.0);
+            break;
+    }
+    SetCustomMouse(graphic, offsetX, offsetY, MGUI_HUD_WIDTH<<1, MGUI_HUD_HEIGHT<<1);
+    if(isSilent)
+        return;
+
+    str stringBuilder;
+    if(mode==MGUI_EDITOR_MODE_SELECT)
+        stringBuilder = "Selection";
+    else {
+        switch(mguiEditorMouseType) {
+            case MGUI_EDITOR_STAMP_TEXT:        stringBuilder = "text"; break;
+            case MGUI_EDITOR_STAMP_GRAPHIC:     stringBuilder = "graphic"; break;
+            case MGUI_EDITOR_STAMP_MOUSE_AREA:  stringBuilder = "mouse area"; break;
+        }
+        stringBuilder = StrParam(s:"Brush [", s:"\c[72]", s:stringBuilder, s:"\c[p7]", s:"]");
+    }
+    MGUIEditor_ShowBanner(stringBuilder);
+}
+
+function void MGUIEditor_SetDefaultMouseBrush(void) {
+    mguiEditorMouseFont = "SMALLFONT";
+    mguiEditorMouseXFactor = 1.0;
+    mguiEditorMouseYFactor = 1.0;
+    mguiEditorMouseWrap = 1.0;
+    mguiEditorMouseAlpha = 1.0;
+    mguiEditorMouseSizeX = 64;
+    mguiEditorMouseSizeY = 64;
+    mguiEditorMouseIsUniformScale = true;
+}
+
+function void MGUIEditor_ShowBanner(str text) {
+    mguiBannerTimer = 18+((StrLen(text)*5)/4);
+    mguiBannerText = StrParam(s:"\c[p7]", s:text);
+}
+
+function void MGUIEditor_SetInspectorPosition(int state) {
+    if(state==MGUI_INSPECTOR_BOTTOM)
+        SetMouseArea(MGUI_EDITOR_INSPECTOR_DRAWID, 443, 196, 116, 56, 502, 223);
+    else if(state==MGUI_INSPECTOR_TOP)
+        SetMouseArea(MGUI_EDITOR_INSPECTOR_DRAWID, 443, 28, 116, 56, 502, 223);
+    mguiInspectorPosition = state;
+}
