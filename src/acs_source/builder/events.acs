@@ -5,12 +5,14 @@ script "MegaUI Editor Event" (int e, int areaId) CLIENTSIDE {
 
         // Mouse enters area
         case MGUI_EVENT_ENTER:
-            MGUIEditor_DrawStampHook(areaId, MGUI_EDITOR_HOOK_FOCUSED);
+            if(mguiEditorMode==MGUI_EDITOR_MODE_SELECT)
+                MGUIEditor_DrawStampHook(areaId, MGUI_EDITOR_HOOK_FOCUSED);
             break;
 
         // Mouse exits area
         case MGUI_EVENT_EXIT:
-            MGUIEditor_DrawStampHook(areaId, MGUI_EDITOR_HOOK_IDLE);
+            if(mguiEditorMode==MGUI_EDITOR_MODE_SELECT)
+                MGUIEditor_DrawStampHook(areaId, MGUI_EDITOR_HOOK_IDLE);
             break;
 
         // Left click down
@@ -20,22 +22,32 @@ script "MegaUI Editor Event" (int e, int areaId) CLIENTSIDE {
                 case MGUI_EDITOR_MODE_SELECT:
                     if(areaId != MGUI_AREA_NULL) {
                         int slot = MGUIEditor_GetSlotFromStampId(areaId);
-                        MGUIEditor_SetMouseBrush(
-                            mguiEditorStampType[slot],
-                            mguiEditorStampContent[slot],
-                            mguiEditorStampFont[slot],
-                            mguiEditorStampXFactor[slot],
-                            mguiEditorStampYFactor[slot],
-                            mguiEditorStampWrap[slot],
-                            mguiEditorStampAlpha[slot]);
+                        mguiEditorMouseType =       mguiEditorStampType[slot],
+                        mguiEditorMouseContent =    mguiEditorStampContent[slot],
+                        mguiEditorMouseFont =       mguiEditorStampFont[slot],
+                        mguiEditorMouseXFactor =    mguiEditorStampXFactor[slot],
+                        mguiEditorMouseYFactor =    mguiEditorStampYFactor[slot],
+                        mguiEditorMouseWrap =       mguiEditorStampWrap[slot],
+                        mguiEditorMouseAlpha =      mguiEditorStampAlpha[slot],
+                        mguiEditorMouseSizeX =      mguiEditorStampSizeX[slot],
+                        mguiEditorMouseSizeY =      mguiEditorStampSizeY[slot];
                         MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_MOVE, true);
+                        MGUIEditor_SetHookRendering(false);
                         MGUIEditor_DeleteStamp(areaId);
+                        MGUIEditor_Play(MGUI_EDITOR_SFX_STAMP_EQUIP);
                     }
                     break;
 
                 case MGUI_EDITOR_MODE_BRUSH_MOVE:
-                    MGUIEditor_SetStamp(mguiEditorStampCount, mguiEditorMouseType, mguiEditorMouseContent, mguiEditorMouseFont, 
-                        GetMouseX(), GetMouseY(), mguiEditorMouseXFactor, mguiEditorMouseYFactor, mguiEditorMouseWrap, mguiEditorMouseAlpha);
+                    MGUIEditor_SetStamp(mguiEditorStampCount, 
+                        mguiEditorMouseType, 
+                        mguiEditorMouseContent, 
+                        mguiEditorMouseFont, 
+                        GetMouseX(), GetMouseY(), 
+                        mguiEditorMouseXFactor, mguiEditorMouseYFactor, 
+                        mguiEditorMouseWrap, 
+                        mguiEditorMouseAlpha, 
+                        mguiEditorMouseSizeX, mguiEditorMouseSizeY);
                     mguiEditorStampCount++;
                     MGUIEditor_Play(MGUI_EDITOR_SFX_STAMP_ADD);
                     MGUIEditor_SetMode(MGUI_EDITOR_MODE_SELECT, true);
@@ -86,15 +98,11 @@ script "MegaUI Editor Chat" (int type, int message, int arg2) EVENT {
                     MGUIEditor_Log(strParam(s:"Error : stamp limit of ", d:MGUI_EDITOR_STAMP_MAX, s:" reached!!"));
                 }
                 else {
-                    MGUIEditor_SetMouseBrush(
-                        MGUI_EDITOR_STAMP_GRAPHIC,
-                        message,
-                        mguiEditorMouseFont,
-                        mguiEditorMouseXFactor,
-                        mguiEditorMouseYFactor,
-                        mguiEditorMouseWrap,
-                        1.0);
+                    mguiEditorMouseType = MGUI_EDITOR_STAMP_GRAPHIC;
+                    mguiEditorMouseContent = message;
+                    mguiEditorMouseAlpha = 1.0;
                     MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_MOVE, false);
+                    MGUIEditor_SetHookRendering(false);
                 }
                 break;
 
@@ -133,14 +141,8 @@ function void MGUIEditor_CheckInput(void) {
 
             // Select <=> Mouse area 
             if(pressedInput & BT_RELOAD) {
-                MGUIEditor_SetMouseBrush(
-                    MGUI_EDITOR_STAMP_MOUSE_AREA,
-                    mguiEditorMouseContent,
-                    mguiEditorMouseFont,
-                    mguiEditorMouseXFactor,
-                    mguiEditorMouseYFactor,
-                    mguiEditorMouseWrap,
-                    1.0);
+                mguiEditorMouseType = MGUI_EDITOR_STAMP_MOUSE_AREA;
+                MGUIEditor_SetHookRendering(false);
                 MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_MOVE, false);
             }
             break;
@@ -190,9 +192,7 @@ function void MGUIEditor_CheckInput(void) {
                 // Graphic <-> text toggle
                 if(!(input & BT_RELOAD) && (prevInput & BT_RELOAD) 
                     && !(mguiEditorMouseType==MGUI_EDITOR_STAMP_TEXT && MGUIEditor_IsKeyHeld(MGUI_EDITOR_KEY_RELOAD, 0))) {
-                    MGUIEditor_SetMouseBrush((mguiEditorMouseType==MGUI_EDITOR_STAMP_GRAPHIC ? MGUI_EDITOR_STAMP_TEXT : MGUI_EDITOR_STAMP_GRAPHIC), 
-                        mguiEditorMouseContent, mguiEditorMouseFont, 
-                        mguiEditorMouseXFactor, mguiEditorMouseYFactor, mguiEditorMouseWrap, mguiEditorMouseAlpha);
+                    mguiEditorMouseType = (mguiEditorMouseType==MGUI_EDITOR_STAMP_GRAPHIC) ?  MGUI_EDITOR_STAMP_TEXT : MGUI_EDITOR_STAMP_GRAPHIC;
                     MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_MOVE, false);
                     break;
                 }
@@ -284,6 +284,15 @@ function void MGUIEditor_CheckInput(void) {
                 // Alpha (graphic/text) ; size (mouse area)
                 case MGUI_EDITOR_MODE_BRUSH_JUMP:
                     if(mguiEditorMouseType==MGUI_EDITOR_STAMP_MOUSE_AREA) {
+                        tmp = (GetRawMouseDeltaX()>>5)&0xFFFFFFFE;
+                        if(tmp)         mguiEditorMouseSizeX = MGUI_Clamp(mguiEditorMouseSizeX-tmp, 2, 800);
+                        if(a)           mguiEditorMouseSizeX = MGUI_Max(mguiEditorMouseSizeX-MGUI_EDITOR_SIZE_DELTA, 2);
+                        else if(d)      mguiEditorMouseSizeX = MGUI_Min(mguiEditorMouseSizeX+MGUI_EDITOR_SIZE_DELTA, 800);
+
+                        tmp = (GetRawMouseDeltaY()>>5)&0xFFFFFFFE;
+                        if(tmp)         mguiEditorMouseSizeY = MGUI_Clamp(mguiEditorMouseSizeY-tmp, 2, 800);
+                        if(w)           mguiEditorMouseSizeY = MGUI_Max(mguiEditorMouseSizeY-MGUI_EDITOR_SIZE_DELTA, 2);
+                        else if(s)      mguiEditorMouseSizeY = MGUI_Min(mguiEditorMouseSizeY+MGUI_EDITOR_SIZE_DELTA, 800);
                     }
                     else {
                         tmp = GetRawMouseDeltaX()<<1;

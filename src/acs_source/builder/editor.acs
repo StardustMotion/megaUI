@@ -16,6 +16,8 @@ int     mguiEditorMouseType,
         mguiEditorMouseYFactor,
         mguiEditorMouseWrap,
         mguiEditorMouseAlpha,
+        mguiEditorMouseSizeX,
+        mguiEditorMouseSizeY,
         mguiEditorMouseIsUniformScale;
 
 script "MegaUI Editor" (void) CLIENTSIDE {
@@ -108,8 +110,8 @@ script "MegaUI Editor" (void) CLIENTSIDE {
                 }
             }
             // Mouse area
-            else
-                stringBuilder = strParam(s:stringBuilder, s:"\c[f2]Size \cj");
+            else if(mguiEditorMouseType==MGUI_EDITOR_STAMP_MOUSE_AREA)
+                stringBuilder = strParam(s:stringBuilder, s:"\c[f2]Size \cj", d:mguiEditorMouseSizeX, s:"x", d:mguiEditorMouseSizeY);
                     
             // Draw Inspector
             DrawText(stringBuilder, "smallfont", 444, 196, 502, 223, 502, 0.85);
@@ -126,6 +128,9 @@ script "MegaUI Editor" (void) CLIENTSIDE {
                     break;
 
                 case MGUI_EDITOR_STAMP_MOUSE_AREA:
+                    Crop(x-(mguiEditorMouseSizeX>>1), y-(mguiEditorMouseSizeY>>1), mguiEditorMouseSizeX, mguiEditorMouseSizeY, hudWidth);
+                    Draw("MEGAUI_D", x, y, hudWidth, hudHeight, MGUI_EDITOR_AREA_FLASH);
+                    Uncrop();
                     break;
             }
 
@@ -146,31 +151,39 @@ script "MegaUI Help" (void) {
 
 function void MGUIEditor_SetMode(int mode, bool isSilent) {
     mguiEditorMode = mode;
+    int graphic, offsetX, offsetY;
     switch(mode) {
         case MGUI_EDITOR_MODE_SELECT:
-            SetMouseCursor("MEGAUI_3"); SetMouseOffset(6, 8); SetMouseSpeed(1.0); 
+            graphic = "MEGAUI_3";
+            offsetX = 6;
+            offsetY = 8;
+            SetMouseSpeed(1.0); 
+            MGUIEditor_SetHookRendering(true);
             break;
 
         case MGUI_EDITOR_MODE_BRUSH_MOVE:
-            SetMouseCursor("MEGAUI_4"); SetMouseOffset(0, 0); SetMouseSpeed(1.0); 
+            graphic = "MEGAUI_4"; 
+            SetMouseSpeed(1.0); 
             break;
 
         case MGUI_EDITOR_MODE_BRUSH_HUD:
-            SetMouseCursor("MEGAUI_5"); SetMouseOffset(0, 0); SetMouseSpeed(0.0); 
+            graphic = "MEGAUI_5"; 
+            SetMouseSpeed(0.0); 
             break;
 
         // Alpha (graphic/text) ; Size (mouse area)
         case MGUI_EDITOR_MODE_BRUSH_JUMP:
-            SetMouseOffset(0, 0);
+            graphic = (mguiEditorMouseType==MGUI_EDITOR_STAMP_MOUSE_AREA ? "MEGAUI_B" : "MEGAUI_8");   
             SetMouseSpeed(0.0);
-            SetMouseCursor(mguiEditorMouseType==MGUI_EDITOR_STAMP_MOUSE_AREA ? "MEGAUI_B" : "MEGAUI_8");   
             break;
 
         // Wrap (text)
         case MGUI_EDITOR_MODE_BRUSH_CROUCH:
-            SetMouseCursor("MEGAUI_7"); SetMouseOffset(0, 0); SetMouseSpeed(0.0); 
+            graphic = "MEGAUI_7";
+            SetMouseSpeed(0.0);
             break;
     }
+    SetCustomMouse(graphic, offsetX, offsetY, MGUI_HUD_WIDTH<<1, MGUI_HUD_HEIGHT<<1);
     if(isSilent)
         return;
     str stringBuilder;
@@ -188,18 +201,14 @@ function void MGUIEditor_SetMode(int mode, bool isSilent) {
     MGUIEditor_ShowBanner(stringBuilder);
 }
 
-function void MGUIEditor_SetMouseBrush(int type, str content, str font, int xFactor, int yFactor, int wrap, int alpha) {
-    mguiEditorMouseType = type;
-    mguiEditorMouseContent = content;
-    mguiEditorMouseFont = font;
-    mguiEditorMouseXFactor = xFactor;
-    mguiEditorMouseYFactor = yFactor;
-    mguiEditorMouseWrap = wrap;
-    mguiEditorMouseAlpha = alpha;
-}
-
 function void MGUIEditor_SetDefaultMouseBrush(void) {
-    MGUIEditor_SetMouseBrush(mguiEditorMouseType, mguiEditorMouseContent, "SMALLFONT", 1.0, 1.0, 1.0, 1.0);
+    mguiEditorMouseFont = "SMALLFONT";
+    mguiEditorMouseXFactor = 1.0;
+    mguiEditorMouseYFactor = 1.0;
+    mguiEditorMouseWrap = 1.0;
+    mguiEditorMouseAlpha = 1.0;
+    mguiEditorMouseSizeX = 64;
+    mguiEditorMouseSizeY = 32;
     mguiEditorMouseIsUniformScale = true;
 }
 

@@ -23,7 +23,7 @@ int cropX, cropY, cropWidth, cropHeight;
 // -------------------------------------------------------------------------------------------
 
 // Displays warning/error logs, and display mouse areas for mouse menu
-#DEFINE MGUI_DEBUG 1
+#DEFINE MGUI_DEBUG 0
 
 // The n-th Draw's rendering has ABOVE priority than the (n-1)th Draw.
 
@@ -86,21 +86,20 @@ function void Uncrop(void) {
 function bool   StartMouseMenu(str scriptName) {    return MGUI_StartMouseMenu(scriptName); }
 function void   EndMouseMenu(void) {                MGUI_EndMouseMenu(); }
 
-function void   SetMouseCursor(str graphic) {       MGUI_MouseAPI(0, graphic); }
-function void   SetMouseOffset(int x, int y) {      MGUI_MouseAPI(1, (y<<16)|x); }
+function void   SetCustomMouse(str graphic, int offsetX, int offsetY, int hudWidth, int hudHeight) { MGUI_SetCustomMouse(graphic, offsetX, offsetY, hudWidth, hudHeight); }
 // Note the mouse speed is also affected by player's mosue sensitivity option.
-function void   SetMouseSpeed(int speed) {          MGUI_MouseAPI(2, speed); }
+function void   SetMouseSpeed(int speed) {          MGUI_MouseAPI(0, speed); }
 
 function void   SetMouseArea(int areaId, int x, int y, int width, int height, int hudWidth, int hudHeight) { MGUI_SetMouseArea(areaId, x, y, width, height, hudWidth, hudHeight); }
 function void   DeleteMouseArea(int id) {           MGUI_DeleteMouseArea(id); }
 
 // Normalized values. Use as GetMouse() * hudWidth.
-function int    GetMouseX(void) {                   return MGUI_MouseAPI(3, false); }
-function void   SetMouseX(int value) {              MGUI_MouseAPI(4, value); }
-function int    GetMouseY(void) {                   return MGUI_MouseAPI(5, false); }
-function void   SetMouseY(int value) {              MGUI_MouseAPI(6, value); }
-function int    GetRawMouseDeltaX(void) {           return MGUI_MouseAPI(7, false); }
-function int    GetRawMouseDeltaY(void) {           return MGUI_MouseAPI(8, false); }
+function int    GetMouseX(void) {                   return MGUI_MouseAPI(1, false); }
+function void   SetMouseX(int value) {              MGUI_MouseAPI(2, value); }
+function int    GetMouseY(void) {                   return MGUI_MouseAPI(3, false); }
+function void   SetMouseY(int value) {              MGUI_MouseAPI(4, value); }
+function int    GetRawMouseDeltaX(void) {           return MGUI_MouseAPI(5, false); }
+function int    GetRawMouseDeltaY(void) {           return MGUI_MouseAPI(6, false); }
 
 
 /*
@@ -149,7 +148,10 @@ function void MGUI_DrawCore(int id, str value, str font, int x, int y, int hudWi
 
 bool    mguiIsMouseMenuOpen =       false;
 str     mguiMouseGraphic =          "DOOMCURS";
-int     mguiMouseOffset =           7 | 14.0; 
+int     mguiMouseOffsetX =          7;
+int     mguiMouseOffsetY =          14;
+int     mguiMouseHudWidth =         MGUI_HUD_WIDTH;
+int     mguiMouseHudHeight =        MGUI_HUD_HEIGHT;
 int     mguiMouseSpeed =            1.0;
 str     mguiMouseScript =           "MegaUI Mouse Callback ???";
 int     mguiMouseX =                0.5;
@@ -168,11 +170,11 @@ script "MegaUI Mouse Menu" (void) CLIENTSIDE {
     SetMouseX(0.5);
     SetMouseY(0.5);
     while(mguiIsMouseMenuOpen) {
-        int x = MGUI_Roundf(GetMouseX()*MGUI_HUD_WIDTH)>>16,
-            y = MGUI_Roundf(GetMouseY()*MGUI_HUD_HEIGHT)>>16;
+        int x = MGUI_Roundf(GetMouseX()*mguiMouseHudWidth)>>16,
+            y = MGUI_Roundf(GetMouseY()*mguiMouseHudHeight)>>16;
         if(MGUI_DEBUG)
             Draw(area == MGUI_AREA_NULL ? "MEGAUI_1" : "MEGAUI_2", x, y, MGUI_HUD_WIDTH, MGUI_HUD_HEIGHT, 1.0);
-        Draw(mguiMouseGraphic,  x+(mguiMouseOffset & 0xFFFF), y + (mguiMouseOffset >> 16), MGUI_HUD_WIDTH, MGUI_HUD_HEIGHT, 1.0);
+        Draw(mguiMouseGraphic,  x + mguiMouseOffsetX, y + mguiMouseOffsetY, mguiMouseHudWidth, mguiMouseHudHeight, 1.0);
 
         // Fetch current hovered area
         area = MGUI_GetMouseAreaId();
@@ -253,17 +255,23 @@ function void MGUI_EndMouseMenu(void) {
 
 function int MGUI_MouseAPI(int type, int value) {
     switch(type) {
-        case 0: mguiMouseGraphic = value; break;
-        case 1: mguiMouseOffset = value; break;
-        case 2: mguiMouseSpeed = value; break;
-        case 3: return mguiMouseX; break;
-        case 4: mguiMouseX = MGUI_Clamp(value, 0, 1.0); break;
-        case 5: return mguiMouseY; break;
-        case 6: mguiMouseY = MGUI_Clamp(value, 0, 1.0); break;
-        case 7: return GetPlayerInput(-1, INPUT_YAW);
-        case 8: return (GetPlayerInput(-1, INPUT_PITCH)*GetScreenWidth())/GetScreenHeight();
+        case 0: mguiMouseSpeed = value; break;
+        case 1: return mguiMouseX; break;
+        case 2: mguiMouseX = MGUI_Clamp(value, 0, 1.0); break;
+        case 3: return mguiMouseY; break;
+        case 4: mguiMouseY = MGUI_Clamp(value, 0, 1.0); break;
+        case 5: return GetPlayerInput(-1, INPUT_YAW);
+        case 6: return (GetPlayerInput(-1, INPUT_PITCH)*GetScreenWidth())/GetScreenHeight();
     }
     return 0;
+}
+
+function void MGUI_SetCustomMouse(str graphic, int offsetX, int offsetY, int hudWidth, int hudHeight) {
+    mguiMouseGraphic = graphic;
+    mguiMouseOffsetX = offsetX;
+    mguiMouseOffsetY = offsetY;
+    mguiMouseHudWidth = hudWidth;
+    mguiMouseHudHeight = hudHeight;
 }
 
 function void MGUI_SetMouseArea(int areaId, int x, int y, int width, int height, int hudWidth, int hudHeight) { 
