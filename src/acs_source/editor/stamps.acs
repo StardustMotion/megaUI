@@ -1,0 +1,114 @@
+
+// -------------------------------------------------------------------------------------------
+//      Stamps
+// -------------------------------------------------------------------------------------------
+
+// Types
+#DEFINE MGUI_EDITOR_STAMP_GRAPHIC           0
+#DEFINE MGUI_EDITOR_STAMP_TEXT              1
+#DEFINE MGUI_EDITOR_STAMP_MOUSE_AREA        2
+
+#DEFINE MGUI_EDITOR_HOOK_FOCUSED            0
+#DEFINE MGUI_EDITOR_HOOK_IDLE               1
+#DEFINE MGUI_EDITOR_HOOK_INVISIBLE          2
+
+#DEFINE MGUI_EDITOR_HOOK_HUD_WIDTH          MGUI_HUD_WIDTH<<1
+#DEFINE MGUI_EDITOR_HOOK_HUD_HEIGHT         MGUI_HUD_HEIGHT<<1
+
+int mguiEditorStampCount = 0,
+    mguiEditorStampType[MGUI_EDITOR_STAMP_MAX+1],       // Graphic/Text/Mouse area
+    mguiEditorStampContent[MGUI_EDITOR_STAMP_MAX+1],    // Data (only for graphic/text)
+    mguiEditorStampFont[MGUI_EDITOR_STAMP_MAX+1],       // Font (only for text)
+    mguiEditorStampX[MGUI_EDITOR_STAMP_MAX+1],          // Pos X
+    mguiEditorStampY[MGUI_EDITOR_STAMP_MAX+1],          // Pos Y
+    mguiEditorStampXFactor[MGUI_EDITOR_STAMP_MAX+1],    // Base width (320) multiplier 
+    mguiEditorStampYFactor[MGUI_EDITOR_STAMP_MAX+1],    // Base height (240) multiplier
+    mguiEditorStampWrap[MGUI_EDITOR_STAMP_MAX+1],       // Wrap (only for text)
+    mguiEditorStampAlpha[MGUI_EDITOR_STAMP_MAX+1],      // Opacity (only for non-mouse area)
+    mguiEditorStampSizeX[MGUI_EDITOR_STAMP_MAX+1],      // Dimension (Width) (only for mouse area)
+    mguiEditorStampSizeY[MGUI_EDITOR_STAMP_MAX+1];      // Dimension (Height) (only for mouse area)
+
+function int MGUIEditor_GetStampIdFromSlot(int slot) {      return (MGUI_EDITOR_STAMP_DRAWID_END - 1) - (slot<<1); }
+function int MGUIEditor_GetSlotFromStampId(int stampId) {   return ((MGUI_EDITOR_STAMP_DRAWID_END - 1) - stampId)>>1; }
+
+function void MGUIEditor_SetStamp(int slot, int type, str content, str font, int x, int y, int xFactor, int yFactor, int wrap, int alpha, int sizeX, int sizeY) {
+    mguiEditorStampType[slot] =         type;
+    mguiEditorStampContent[slot] =      content;
+    mguiEditorStampFont[slot] =         font;
+    mguiEditorStampX[slot] =            x;
+    mguiEditorStampY[slot] =            y;
+    mguiEditorStampXFactor[slot] =      xFactor;
+    mguiEditorStampYFactor[slot] =      yFactor;
+    mguiEditorStampWrap[slot] =         wrap;
+    mguiEditorStampAlpha[slot] =        alpha;
+    mguiEditorStampSizeX[slot] =        sizeX;
+    mguiEditorStampSizeY[slot] =        sizeY;
+
+    int hudWidth = MGUIEditor_ToHud(xFactor, MGUI_HUD_WIDTH),
+        hudHeight = MGUIEditor_ToHud(yFactor, MGUI_HUD_HEIGHT),
+        xPos = (x*hudWidth)>>16,
+        yPos = (y*hudHeight)>>16;
+
+    int stampId = MGUIEditor_GetStampIdFromSlot(slot);
+    switch(mguiEditorStampType[slot]) {
+
+        case MGUI_EDITOR_STAMP_GRAPHIC:
+            Show(stampId, content, xPos, yPos, hudWidth, hudHeight, alpha);
+            break;
+
+        case MGUI_EDITOR_STAMP_TEXT:
+            ShowText(stampId, content, font, xPos, yPos, hudWidth, hudHeight, MGUIEditor_ToHud(wrap, hudWidth), alpha, MGUI_CENTER);
+            break;
+
+        case MGUI_EDITOR_STAMP_MOUSE_AREA:
+            Crop(xPos-(sizeX>>1), yPos-(sizeY>>1), sizeX, sizeY, hudWidth);
+            Show(stampId, "MEGAUI_B", xPos, yPos, hudWidth, hudHeight, MGUI_EDITOR_AREA_FLASH);
+            Uncrop();
+            break;
+    }
+    SetMouseArea(stampId, (x*MGUI_EDITOR_HOOK_HUD_WIDTH)>>16, (y*MGUI_EDITOR_HOOK_HUD_HEIGHT)>>16, 16, 16, MGUI_EDITOR_HOOK_HUD_WIDTH, MGUI_EDITOR_HOOK_HUD_HEIGHT); // Hook mouse area
+}
+
+function void MGUIEditor_DeleteStamp(int stampId) {
+    for(int slotA = 0; slotA < mguiEditorStampCount; slotA++) {
+        if(MGUIEditor_GetStampIdFromSlot(slotA) == stampId) {
+            for(int slotB = slotA; slotB < mguiEditorStampCount; slotB++) {
+                MGUIEditor_SetStamp(slotB, 
+                    mguiEditorStampType[slotB+1], 
+                    mguiEditorStampContent[slotB+1], 
+                    mguiEditorStampFont[slotB+1],
+                    mguiEditorStampX[slotB+1], 
+                    mguiEditorStampY[slotB+1], 
+                    mguiEditorStampXFactor[slotB+1], 
+                    mguiEditorStampYFactor[slotB+1],
+                    mguiEditorStampWrap[slotB+1],
+                    mguiEditorStampAlpha[slotB+1],
+                    mguiEditorStampSizeX[slotB+1],
+                    mguiEditorStampSizeY[slotB+1]
+                );
+            }
+
+            // Erase the last one
+            stampId = MGUIEditor_GetStampIdFromSlot(mguiEditorStampCount-1);
+            DeleteMouseArea(stampId);
+            Hide(stampId-1);
+            mguiEditorStampCount--;
+            return;
+        }
+    }
+}
+
+function void MGUIEditor_DrawStampHook(int areaId, int state) {
+    int slot = MGUIEditor_GetSlotFromStampId(areaId);
+    Show(areaId-1, "MEGAUI_3", 
+        (mguiEditorStampX[slot]*MGUI_EDITOR_HOOK_HUD_WIDTH)>>16, (mguiEditorStampY[slot]*MGUI_EDITOR_HOOK_HUD_HEIGHT)>>16, MGUI_EDITOR_HOOK_HUD_WIDTH, MGUI_EDITOR_HOOK_HUD_HEIGHT, 
+            state==MGUI_EDITOR_HOOK_FOCUSED ? 1.0 
+            : state==MGUI_EDITOR_HOOK_INVISIBLE ? 0.0 
+            : 0.4);
+}
+
+function void MGUIEditor_SetHookRendering(int state) {
+    state = (state ? MGUI_EDITOR_HOOK_IDLE : MGUI_EDITOR_HOOK_INVISIBLE);
+    for(int slot = 0; slot < mguiEditorStampCount; slot++)
+        MGUIEditor_DrawStampHook(MGUIEditor_GetStampIdFromSlot(slot), state);
+}

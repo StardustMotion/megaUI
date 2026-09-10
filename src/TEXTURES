@@ -1,0 +1,2 @@
+graphic MEGAUI_A, 800, 600 { }
+graphic MEGAUI_B, 800, 600 { patch MEGAUI_9, 0, 0 { translation "0:255=217:217" }}
