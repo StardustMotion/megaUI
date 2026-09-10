@@ -1,0 +1,157 @@
+[enu default]
+
+MGUI_EDITOR_OPEN =
+    "\n"
+    "\c[r7]      ===================================\n"
+    "\n"
+    "\c[r7]      ========== Mega UI Editor =========\n"
+    "\n"
+    "\c[r7]      ===================================\n"
+    "\n"
+    "\c[p6]> Type some text or a graphic file name in chat to start painting\n"
+    "\c[p6]> Type \c[j5]megabuild\c[p6] in console to generate ACS\n"
+    "\c[p6]   - To write it to disk, use \c[j5]logfile\c[p6] command, i.e :\n"
+    "\c[j5]   - logfile out \c[p6]=> \c[j5]megabuild \c[p6]=> \c[j5]logfile\n"
+    "\c[p6]> Type \c[j5]megahelp\c[p6] in console to show/hide the help on screen\n"
+    "\n"
+    "\c[r7]      ==================================="
+    ;
+
+MGUI_EDITOR_SELECT =
+    "\c[j5]> Selection <\n\n"
+
+    "\c[i0][ Fire ]\n"
+    "\c[q7]=> Edit\n"
+
+    "\c[i0][ Altfire ]\n"
+    "\c[q7]=> Delete\n"
+
+    "\c[i0][ Write text/graphic name in chat ]\n"
+    "\c[q7]=> Graphic/text mode\n"
+
+    "\c[i0][ Reload ]\n"
+    "\c[q7]=> Mouse area mode \n"
+    ;
+
+MGUI_EDITOR_STAMP_TEXT =
+    "\c[j5]> Brush (text) <\n\n"
+
+    "\c[i0][ \c[c9]Tap\c[i0] reload ]\n"
+    "\c[q7]=> Graphic mode\n"
+
+    "\c[i0][ \c[c9]Hold\c[i0] reload ]\n"
+    "\c[q7]=> Change font\n"
+
+    "\c[i0][ Mouse ]\n"
+    "\c[q7]=> Move\n"
+
+    "\c[i0][ Move keys ]\n"
+    "\c[q7]=> Fine move\n"
+
+    "\c[i0][ Fire ]\n"
+    "\c[q7]=> Stamp\n"
+
+    "\c[i0][ Altfire ]\n"
+    "\c[q7]=> Hud scale\n"
+
+    "\c[i0][ \c[c9]Tap\c[i0] Show score ]\n"
+    "\c[q7]=> Aspect ratio\n"
+
+    "\c[i0][ \c[c9]Hold\c[i0] Show score ]\n"
+    "\c[q7]=> Reset settings\n"
+
+    "\c[i0][ Jump ]\n"
+    "\c[q7]=> Alpha\n"
+
+    "\c[i0][ Crouch ]\n"
+    "\c[q7]=> Text Wrap\n"
+    ;
+
+MGUI_EDITOR_STAMP_GRAPHIC =
+    "\c[j5]> Brush (graphic) <\n\n"
+
+    "\c[i0][ Reload ]\n"
+    "\c[q7]=> Text mode\n"
+
+    "\c[i0][ Mouse ]\n"
+    "\c[q7]=> Move\n"
+
+    "\c[i0][ Move keys ]\n"
+    "\c[q7]=> Fine move\n"
+
+    "\c[i0][ Fire ]\n"
+    "\c[q7]=> Stamp\n"
+
+    "\c[i0][ Altfire ]\n"
+    "\c[q7]=> Hud scale\n"
+
+    "\c[i0][ \c[c9]Tap\c[i0] Show score ]\n"
+    "\c[q7]=> Aspect ratio\n"
+
+    "\c[i0][ \c[c9]Hold\c[i0] Show score ]\n"
+    "\c[q7]=> Reset settings\n"
+
+    "\c[i0][ Jump ]\n"
+    "\c[q7]=> Alpha\n"
+    ;
+
+MGUI_EDITOR_STAMP_MOUSE_AREA =
+    "\c[j5]> Brush (mouse area) <\n\n"
+
+    "\c[i0][ Reload ]\n"
+    "\c[q7]=> Selection mode\n"
+
+    "\c[i0][ Mouse ]\n"
+    "\c[q7]=> Move\n"
+
+    "\c[i0][ Move keys ]\n"
+    "\c[q7]=> Fine move\n"
+
+    "\c[i0][ Fire ]\n"
+    "\c[q7]=> Stamp\n"
+
+    "\c[i0][ Altfire ]\n"
+    "\c[q7]=> Hud scale\n"
+
+    "\c[i0][ \c[c9]Tap\c[i0] Show score ]\n"
+    "\c[q7]=> Aspect ratio\n"
+
+    "\c[i0][ \c[c9]Hold\c[i0] Show score ]\n"
+    "\c[q7]=> Reset settings\n"
+
+    "\c[i0][ Jump ]\n"
+    "\c[q7]=> Size\n"
+    ;
+
+
+MGUI_EDITOR_SCALE =
+    "\c[i0][ Mouse ]\n"
+    "\c[q7]=> Scale\n"
+
+    "\c[i0][ Move keys ]\n"
+    "\c[q7]=> Fine scale\n"
+    ;
+
+MGUI_EDITOR_ALPHA =
+    "\c[i0][ Mouse (horizontal) ]\n"
+    "\c[q7]=> Alpha\n"
+
+    "\c[i0][ Left/right keys ]\n"
+    "\c[q7]=> Fine alpha\n"
+    ;
+
+MGUI_EDITOR_WRAP =
+    "\c[i0][ Mouse (horizontal) ]\n"
+    "\c[q7]=> Wrap\n"
+
+    "\c[i0][ Left/right keys ]\n"
+    "\c[q7]=> Fine wrap\n"
+    ;
+
+MGUI_EDITOR_SIZE =
+    "\c[i0][ Mouse (horizontal) ]\n"
+    "\c[q7]=> Resize\n"
+
+    "\c[i0][ Move keys ]\n"
+    "\c[q7]=> Fine resize\n"
+    ;

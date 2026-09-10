@@ -10,50 +10,393 @@
                 //                                                          //
                 //////////////////////////////////////////////////////////////
 
-// Alignment bitflags
-#DEFINE MGUI_CENTER   0x0
-#DEFINE MGUI_TOP      0x1
-#DEFINE MGUI_BOTTOM   0x2
-#DEFINE MGUI_LEFT     0x4
-#DEFINE MGUI_RIGHT    0x8
 
-script "oui" (void) {
-    while(true) {
-        Show(2000, "DOOMCURS", 160, 120, 320, 240, 1.0);
-        delay(35);
-        Hide(2000);
-        delay(35);
+// -------------------------------------------------------------------------------------------
+//      General
+// -------------------------------------------------------------------------------------------
+
+/*
+- To use MegaUI, copy this file to your mod and use #include "megaUI.acs"
+- All functions are meant for CLIENTSIDE scripting (NamedExecuteClientScript)
+- x and y are NON-fixed ints (i.e 160, 120 ; NOT 160.0, 120.0) for position
+- hudWidth and hudHeight represents SetHudSize's "scaling" width/height parameters (i.e 320, 240)
+*/
+
+// Enable to show error messages in console, mouse areas' hitbox, and a crosshair on mouse's position
+//  - /!\ Copy MegaUI's graphics/debug content to your mod for debug to work /!\
+#DEFINE MGUI_DEBUG false
+
+// -------------------------------------------------------------------------------------------
+//      API ~ Rendering
+// -------------------------------------------------------------------------------------------
+
+// ShowText/DrawText flags
+#DEFINE MGUI_CENTER 0x80000000 // Center text
+#DEFINE MGUI_TYPEON 0x40000000 // Delayed text typing / for example, 0.6s delay => `flags = MGUI_TYPEON | 0.6`
+
+// Draws a graphic on screen
+function void Show(int hudMessageId, str graphic, int x, int y, int hudWidth, int hudHeight, int alpha) {
+    MGUI_DrawCore(hudMessageId, "A", graphic, x, y, hudWidth, hudHeight, alpha, 0); 
+}
+
+// Draws a graphic on screen for 1 tic only
+function void Draw(str graphic, int x, int y, int hudWidth, int hudHeight, int alpha) { 
+    Show(0, graphic, x, y, hudWidth, hudHeight, alpha); 
+}
+
+// Draws text on screen
+function void ShowText(int hudMessageId, str text, str font, int x, int y, int hudWidth, int hudHeight, int wrap, int alpha, int flags) {
+    MGUI_DrawTextCore(hudMessageId, text, font, x, y, hudWidth, hudHeight, wrap, alpha, flags);
+}
+
+// Draws text on screen for 1 tic only
+function void DrawText(str text, str font, int x, int y, int hudWidth, int hudHeight, int wrap, int alpha, int flags) { 
+    ShowText(0, text, font, x, y, hudWidth, hudHeight, wrap, alpha, flags);
+}
+
+// Erase a Show() or ShowText() rendered element from screen
+function void Hide(int hudMessageId) { 
+    HudMessageBold(s:""; HUDMSG_PLAIN, hudMessageId, 0, 0, 0, 0, 0); 
+}
+
+// Do not render pixels outside the given rectangle (SetHudClipRect)
+// hudWith is same value as the incoming to-be-cropped element's hudWidth
+function void Crop(int left, int top, int width, int height, int hudWidth) { 
+    MGUI_CropCore(left, top, width, height, hudWidth);
+}
+
+// Stop previous Crop()'s effect
+function void Uncrop(void) { 
+    MGUI_UncropCore();
+}
+
+
+
+
+// -------------------------------------------------------------------------------------------
+//      API ~ Mouse Menu
+// -------------------------------------------------------------------------------------------
+
+#DEFINE MGUI_NULL_AREA                  0x7FFFFFFF
+
+// Mouse Menu events for callback script
+#DEFINE MGUI_EVENT_ENTER                0 // On mouse enter area
+#DEFINE MGUI_EVENT_EXIT                 1 // On mouse leave area
+#DEFINE MGUI_EVENT_DOWN                 2 // On fire button press
+#DEFINE MGUI_EVENT_UP                   3 // On fire button release
+#DEFINE MGUI_EVENT_ALT_DOWN             4 // On altfire button press
+#DEFINE MGUI_EVENT_ALT_UP               5 // On altfire button release
+
+// Enables mouse menu. It will send mouse events to the given @scriptName callback script with the arguments (int e, int areaId) :
+// @e event type
+// @areaId the mouse area id that triggered it (or MGUI_NULL_AREA if none)
+function bool   StartMouseMenu(str scriptName) {    return MGUI_StartMouseMenu(scriptName); }
+
+// Stops mouse menu
+function void   EndMouseMenu(void) {                MGUI_EndMouseMenu(); }
+
+// Customize mouse's graphic / pixel offset from origin / graphic scale (Hud Size)
+function void   SetCustomMouse(str graphic, int offsetX, int offsetY, int hudWidth, int hudHeight) { MGUI_SetCustomMouse(graphic, offsetX, offsetY, hudWidth, hudHeight); }
+
+// Change mouse speed multiplier (default 1.0)
+function void   SetMouseSpeed(int speed) {          MGUI_MouseAPI(0, speed); }
+
+// Registers an area that sends mouse events. Width/height is the area's dimensions, as if it was a graphic file
+function void   SetMouseArea(int areaId, int x, int y, int width, int height, int hudWidth, int hudHeight) { MGUI_SetMouseArea(areaId, x, y, width, height, hudWidth, hudHeight); }
+
+// Unregisters an area
+function void   DeleteMouseArea(int id) {           MGUI_DeleteMouseArea(id); }
+
+// Mouse's normalized position :
+//  > 0.0 for left (X) / top (Y) of the screen
+//  > 1.0 for right (X) / bottom (Y) of the screen
+function int    GetMouseX(void) {                   return MGUI_MouseAPI(1, false); }
+function void   SetMouseX(int value) {              MGUI_MouseAPI(2, value); }
+function int    GetMouseY(void) {                   return MGUI_MouseAPI(3, false); }
+function void   SetMouseY(int value) {              MGUI_MouseAPI(4, value); }
+
+// Get the physical mouse's position difference since previous tic (unitless)
+function int    GetRawMouseDeltaX(void) {           return MGUI_MouseAPI(5, false); }
+function int    GetRawMouseDeltaY(void) {           return MGUI_MouseAPI(6, false); }
+
+
+// -------------------------------------------------------------------------------------------
+//      API ~ END
+// -------------------------------------------------------------------------------------------
+
+
+
+
+
+/*
+// ---------------------------------------------------------------------------------------------------------------------------------------- //
+// ---------------------------------------------------------------------------------------------------------------------------------------- //
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                                            Internal       
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ---------------------------------------------------------------------------------------------------------------------------------------- //
+// ---------------------------------------------------------------------------------------------------------------------------------------- //
+*/
+
+#DEFINE MGUI_HUD_WIDTH              320
+#DEFINE MGUI_HUD_HEIGHT             240
+
+function void MGUI_Log(str message) {           if(MGUI_DEBUG) log(s:"\c[v7][\c[x5] MegaUI \c[v7]] \c-",s:message); }
+function int MGUI_Min(int x, int y) {           return (x>y ? y : x); }
+function int MGUI_Max(int x, int y) {           return (x>y ? x : y); }
+function int MGUI_Clamp(int n, int l, int r) {  return MGUI_Max(MGUI_Min(n,r),l); }
+function int MGUI_Roundf(int n) {               return (n+0.5)&0xFFFF0000; }
+
+// Adjust x position for widescreen / non-4:3 resolution
+function int MGUI_ToVirtualX(int x, int hudWidth) {
+    int rangeX = FixedDiv(FixedDiv(GetScreenWidth()<<16, GetScreenHeight()<<16),1.333333)*hudWidth;
+    hudWidth<<=16;
+    int x1 = (hudWidth - rangeX)>>1;
+    return MGUI_Roundf(x1 + FixedMul(((hudWidth + rangeX)>>1)-x1, (FixedDiv(x<<16, hudWidth)))); // Lerp
+}
+
+    ///////////////
+    // Rendering //
+    ///////////////
+
+int cropX, cropY, cropWidth, cropHeight;
+
+function void MGUI_DrawCore(int hudMessageId, str value, str font, int x, int y, int hudWidth, int hudHeight, int alpha, int flags) {
+	SetHudSize(hudWidth, hudHeight, true);
+	SetFont(font); 
+    if(flags & MGUI_TYPEON) {
+        HudMessageBold(s:value; HUDMSG_PLAIN|HUDMSG_ALPHA|HUDMSG_TYPEON, hudMessageId, CR_UNTRANSLATED,
+            MGUI_ToVirtualX(x, hudWidth) | (flags & MGUI_CENTER ? 0.4 : 0), y<<16, 0x8000000, (flags & 0x0FFFFFFF), 0x80000000, alpha);
+    }
+    else {
+        HudMessageBold(s:value; HUDMSG_PLAIN|HUDMSG_ALPHA, hudMessageId, CR_UNTRANSLATED,
+            MGUI_ToVirtualX(x, hudWidth) | (flags & MGUI_CENTER ? 0.4 : 0), y<<16, (hudMessageId ? 0x8000000 : 1873), alpha);
     }
 }
 
-// -------------------------------------------------------------------------------------------
-//      API
-// -------------------------------------------------------------------------------------------
-
-// Renders a graphic on screen for 1 tic only
-function void Draw(str graphic, int x, int y, int width, int height, int alpha) {
-    Show(0, graphic, x, y, width, height, alpha);
+function void MGUI_DrawTextCore(int hudMessageId, str text, str font, int x, int y, int hudWidth, int hudHeight, int wrap, int alpha, int flags) {
+    if(wrap) SetHudClipRect(-0x7FFF, -0x7FFF, 0xFFFE, 0xFFFE, wrap);
+    MGUI_DrawCore(hudMessageId, text, font, x, y, hudWidth, hudHeight, alpha, flags);
+    if(wrap) SetHudClipRect(cropX, cropY, cropWidth, cropHeight);
 }
 
-// Renders a graphic on screen, until removed with Hide(id)
-function void Show(int id, str graphic, int x, int y, int width, int height, int alpha) {
-    DrawCore(id, "A", graphic, x, y, MGUI_CENTER, width, height, alpha);
+function void MGUI_CropCore(int left, int top, int width, int height, int hudWidth) { 
+    cropX = (MGUI_ToVirtualX(left+(width>>1), hudWidth)>>16)-(width>>1),
+    cropY = top,
+    cropWidth = width,
+    cropHeight = height;
+    SetHudClipRect(cropX, cropY, cropWidth, cropHeight, 0);
 }
 
-// Remove a graphic on screen (drawn with Draw())
-function void Hide(int id) { 
-    HudMessageBold(s:""; HUDMSG_PLAIN, id, 0, 0, 0, 0, 0); 
+function void MGUI_UncropCore(void) {
+    cropX = 0, cropY = 0, cropWidth = 0, cropHeight = 0;
+    SetHudClipRect(0, 0, 0, 0, 0); 
 }
 
 
-// -------------------------------------------------------------------------------------------
-//      Internal / private 
-// -------------------------------------------------------------------------------------------
 
-function void DrawCore(int id, str value, str font, int x, int y, int alignment, int width, int height, int alpha) {
-	SetHudSize(width, height, true); 	
-	SetFont(font); 
-    x = (x<<16) | (alignment & MGUI_LEFT ? 0.1 : alignment & MGUI_RIGHT ? 0.2 : 0.0);
-    y = (y<<16) | (alignment & MGUI_TOP ? 0.1 : alignment & MGUI_BOTTOM ? 0.2 : 0.0);
-    HudMessageBold(s:value; HUDMSG_PLAIN|HUDMSG_ALPHA, id, CR_UNTRANSLATED, x, y, (id ? 0x8000000 : 1873), alpha);
+    /////////////////
+    // Mouse menu  //
+    /////////////////
+
+#DEFINE MGUI_MOUSE_AREA_MAX         256
+#DEFINE MGUI_DEBUG_AREA_DRAWID      1
+#DEFINE MGUI_DEBUG_AREA_DRAWID_END  MGUI_DEBUG_AREA_DRAWID+MGUI_MOUSE_AREA_MAX
+
+#DEFINE MGUI_MOUSE_INTERACT         BT_ATTACK
+#DEFINE MGUI_MOUSE_ALT_INTERACT     BT_ALTATTACK
+
+int mguiIsMouseMenuOpen =       false,
+    mguiMouseGraphic =          "DOOMCURS",
+    mguiMouseOffsetX =          7,
+    mguiMouseOffsetY =          14,
+    mguiMouseX =                0.5,
+    mguiMouseY =                0.5,
+    mguiMouseHudWidth =         MGUI_HUD_WIDTH,
+    mguiMouseHudHeight =        MGUI_HUD_HEIGHT,
+    mguiMouseSpeed =            1.0,
+    mguiMouseScript =           "MegaUI Mouse Callback ???";
+
+int     mguiMouseAreaCount = 0;
+
+int     mguiMouseAreaIds[MGUI_MOUSE_AREA_MAX+1],
+        mguiMouseAreaX1[MGUI_MOUSE_AREA_MAX+1],
+        mguiMouseAreaX2[MGUI_MOUSE_AREA_MAX+1],
+        mguiMouseAreaY1[MGUI_MOUSE_AREA_MAX+1],
+        mguiMouseAreaY2[MGUI_MOUSE_AREA_MAX+1]; 
+
+// The mouse draw/area poll thread
+script "MegaUI Mouse Menu" (void) CLIENTSIDE {
+    int prevArea = MGUI_NULL_AREA, 
+        area = prevArea;
+    SetMouseX(0.5);
+    SetMouseY(0.5);
+    while(mguiIsMouseMenuOpen) {
+        if(MGUI_DEBUG)
+            Draw(area == MGUI_NULL_AREA ? "MEGAUI_Y" : "MEGAUI_X", (GetMouseX()*MGUI_HUD_WIDTH)>>16, (GetMouseY()*MGUI_HUD_HEIGHT)>>16, MGUI_HUD_WIDTH, MGUI_HUD_HEIGHT, 1.0);
+        Draw(mguiMouseGraphic,  
+            (MGUI_Roundf(GetMouseX()*mguiMouseHudWidth)>>16) + mguiMouseOffsetX, 
+            (MGUI_Roundf(GetMouseY()*mguiMouseHudHeight)>>16) + mguiMouseOffsetY, 
+            mguiMouseHudWidth, mguiMouseHudHeight, 1.0);
+
+        area = MGUI_GetMouseAreaId();
+
+		// Event detection
+        int input = GetPlayerInput(-1, INPUT_BUTTONS);
+		int inputDelta = GetPlayerInput(-1, INPUT_OLDBUTTONS) ^ input;
+
+        if(inputDelta & MGUI_MOUSE_INTERACT)
+			ACS_NamedExecuteWithResult(mguiMouseScript, (input & MGUI_MOUSE_INTERACT) ? MGUI_EVENT_DOWN : MGUI_EVENT_UP, area);
+        else if(inputDelta & MGUI_MOUSE_ALT_INTERACT)
+			ACS_NamedExecuteWithResult(mguiMouseScript, (input & MGUI_MOUSE_ALT_INTERACT) ? MGUI_EVENT_ALT_DOWN : MGUI_EVENT_ALT_UP, area);
+        if(area != prevArea) {
+            if(area != MGUI_NULL_AREA)      
+                ACS_NamedExecuteWithResult(mguiMouseScript, MGUI_EVENT_ENTER, area);
+            if(prevArea != MGUI_NULL_AREA)  {
+                // Won't call EXIT event on an area that just got deleted
+                for(int i = 0; i < mguiMouseAreaCount; i++) 
+                    if(mguiMouseAreaIds[i] == prevArea) { 
+                        ACS_NamedExecuteWithResult(mguiMouseScript, MGUI_EVENT_EXIT, prevArea);
+                        break;
+                    }
+            }
+            prevArea = area;
+        }
+
+        // Mouse delta
+        delay(1);
+        int delta = GetRawMouseDeltaX();
+        if(delta)
+            SetMouseX(mguiMouseX - ((FixedMul(FixedMul(delta<<16, mguiMouseSpeed), 1.7)>>15)));
+        delta = GetRawMouseDeltaY();
+        if(delta)
+            SetMouseY(mguiMouseY - ((FixedMul(FixedMul(delta<<16, mguiMouseSpeed), 1.7)>>15)));
+    }
+}
+
+
+function bool MGUI_StartMouseMenu(str scriptName) {
+    if(!CheckScript(scriptName, true)) {
+        MGUI_Log(StrParam( s:"Can't start Mouse Menu : the [\c[31]", s:scriptName, s:"\c-] provided callback script does not exist!"));
+        return false;
+    }
+    else if(mguiIsMouseMenuOpen) {
+        MGUI_Log("Warning : tried to open Mouse Menu while one was already active.");
+        return false;
+    }
+    mguiIsMouseMenuOpen =   true; 
+    mguiMouseScript =       scriptName;
+    mguiMouseAreaCount =    0;
+    for(int i = 0; i < MGUI_MOUSE_AREA_MAX+1; i++)
+        mguiMouseAreaIds[i] = MGUI_NULL_AREA;
+    ACS_NamedExecuteWithResult("MegaUI Mouse Menu"); 
+    return true;
+}
+
+function void MGUI_EndMouseMenu(void) {
+    mguiIsMouseMenuOpen = false;
+    if(MGUI_DEBUG) {
+        for(int i = 0; i < mguiMouseAreaCount; i++)
+            Hide(MGUI_DEBUG_AREA_DRAWID+i);
+    }
+}
+
+function int MGUI_MouseAPI(int type, int value) {
+    switch(type) {
+        case 0: mguiMouseSpeed = value; break;
+        case 1: return mguiMouseX; break;
+        case 2: mguiMouseX = MGUI_Clamp(value, 0, 1.0); break;
+        case 3: return mguiMouseY; break;
+        case 4: mguiMouseY = MGUI_Clamp(value, 0, 1.0); break;
+        case 5: return GetPlayerInput(-1, INPUT_YAW);
+        case 6: return (GetPlayerInput(-1, INPUT_PITCH)*GetScreenWidth())/GetScreenHeight();
+    }
+    return 0;
+}
+
+function void MGUI_SetCustomMouse(str graphic, int offsetX, int offsetY, int hudWidth, int hudHeight) {
+    mguiMouseGraphic = graphic;
+    mguiMouseOffsetX = offsetX;
+    mguiMouseOffsetY = offsetY;
+    mguiMouseHudWidth = hudWidth;
+    mguiMouseHudHeight = hudHeight;
+}
+
+function void MGUI_SetMouseArea(int areaId, int x, int y, int width, int height, int hudWidth, int hudHeight) { 
+    if(!mguiIsMouseMenuOpen) {
+        MGUI_Log("Warning : you must be in a mouse menu to call SetMouseArea");
+        return;
+    }
+    if(areaId == MGUI_NULL_AREA) {
+        MGUI_Log(StrParam(s:"Warning : tried to register mouse area with areaId = ", d:MGUI_NULL_AREA, 
+            s:". It's the id used for the null area ; you can not use it."));
+        return;
+    }
+    int slot = -1;
+    for(int i = 0; i < mguiMouseAreaCount; i++){
+        if(mguiMouseAreaIds[i] == areaId) {
+            slot = i;
+            break;
+        }
+    }
+    if(slot == -1) {
+        if(mguiMouseAreaCount == MGUI_MOUSE_AREA_MAX) {
+            MGUI_Log(StrParam(s:"Warning : can't register mouse area, the ", d:MGUI_MOUSE_AREA_MAX, s:" limit is reached!"));
+            return;
+        }
+        else {
+            slot = mguiMouseAreaCount;
+            mguiMouseAreaCount++;
+            mguiMouseAreaIds[slot] = areaId;
+        }
+    }
+
+    x -= (width>>1);
+    y -= (height>>1);
+
+    // Registers bounding box as [0.0, 1.0] (normalized) values
+    mguiMouseAreaX1[slot] = FixedDiv(x<<16, hudWidth<<16);
+    mguiMouseAreaX2[slot] = FixedDiv((x+width)<<16, hudWidth<<16);
+    mguiMouseAreaY1[slot] = FixedDiv(y<<16, hudHeight<<16);
+    mguiMouseAreaY2[slot] = FixedDiv((y+height)<<16,hudHeight<<16);
+    if(MGUI_DEBUG) {
+        Crop(x, y, width, height, hudWidth);
+        Show(MGUI_DEBUG_AREA_DRAWID+slot, "MEGAUI_Z", x, y, hudWidth, hudHeight, 0.4);
+        Uncrop();
+    }
+}
+
+function int MGUI_GetMouseAreaId(void) {
+    int x = GetMouseX(), 
+        y = GetMouseY();
+	int areaId = MGUI_NULL_AREA;
+    for(int i = 0; i < mguiMouseAreaCount; i++) {
+        // Check if within rectangle
+        if(x >= mguiMouseAreaX1[i]) { if(x < mguiMouseAreaX2[i]) { if(y >= mguiMouseAreaY1[i]) { if(y < mguiMouseAreaY2[i]) {
+            if(mguiMouseAreaIds[i] < areaId)
+				areaId = mguiMouseAreaIds[i];
+        } } } }
+    }
+    return areaId;
+}
+
+function void MGUI_DeleteMouseArea(int areaId) {
+    if(!mguiIsMouseMenuOpen) {
+        MGUI_Log("Warning : you must be in a mouse menu to call DeleteMouseArea");
+        return;
+    }
+    for(int i = 0; i < mguiMouseAreaCount; i++) {
+        if(mguiMouseAreaIds[i] == areaId) {
+            for(int j = i; j <= mguiMouseAreaCount; j++) {
+                mguiMouseAreaIds[j] =   mguiMouseAreaIds[j+1];
+                mguiMouseAreaX1[j] =    mguiMouseAreaX1[j+1];
+                mguiMouseAreaX2[j] =    mguiMouseAreaX2[j+1];
+                mguiMouseAreaY1[j] =    mguiMouseAreaY1[j+1];
+                mguiMouseAreaY2[j] =    mguiMouseAreaY2[j+1];
+            }
+            mguiMouseAreaCount--;
+            Hide(MGUI_DEBUG_AREA_DRAWID+i);
+            return;
+        }
+    }
 }

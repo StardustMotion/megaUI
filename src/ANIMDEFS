@@ -1,0 +1,5 @@
+
+// Editor - Mouse highlighted
+texture MEGAUI_A
+	pic MEGAUI_9 tics 1
+	pic TNT1A0 tics 1

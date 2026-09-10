@@ -1,0 +1,28 @@
+
+// -------------------------------------------------------------------------------------------
+//     Common 
+// -------------------------------------------------------------------------------------------
+
+#DEFINE MGUI_EDITOR_TEXT_ON             "\c[80]ON\c-"
+#DEFINE MGUI_EDITOR_TEXT_OFF            "\c[p3]OFF\c-"
+#DEFINE MGUI_EDITOR_AREA_FLASH          0.4
+
+#DEFINE MGUI_EDITOR_STAMP_MAX           256
+
+// DrawIds
+#DEFINE MGUI_EDITOR_INSPECTOR_DRAWID    MGUI_DEBUG_AREA_DRAWID_END
+#DEFINE MGUI_EDITOR_STAMP_DRAWID        MGUI_EDITOR_INSPECTOR_DRAWID+1 
+#DEFINE MGUI_EDITOR_STAMP_DRAWID_END    MGUI_EDITOR_STAMP_DRAWID + (MGUI_EDITOR_STAMP_MAX * 2) // 1 stamp id + 1 stamp's "..." hook icon id
+#DEFINE MGUI_DRAWID                     MGUI_EDITOR_STAMP_DRAWID_END
+#DEFINE MGUI_EDITOR_BACKGROUND_DRAWID   0x7FFFFFA
+
+#DEFINE MGUI_SFX_SELECT             "MEGAUIE0"
+#DEFINE MGUI_SFX_CONFIRM            "MEGAUIE1"
+#DEFINE MGUI_SFX_DELETE             "MEGAUIE2"
+#DEFINE MGUI_SFX_MODE               "MEGAUIE3"
+#DEFINE MGUI_SFX_CONFIG             "MEGAUIE4"
+#DEFINE MGUI_SFX_ERROR              "MEGAUIE5"
+
+function void   MGUIEditor_Log(str message) {         log(s:"\c[v7][\c[z2] MegaUI Editor \c[v7]] \c-",s:message); }
+function void   MGUIEditor_Play(str sound) {          LocalAmbientSound(sound,127); }
+function int    MGUIEditor_ToHud(int factor, int hud) {return (factor * hud)>>16; }
