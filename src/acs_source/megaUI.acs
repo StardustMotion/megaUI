@@ -24,7 +24,7 @@
 
 // Enable to show error messages in console, mouse areas' hitbox, and a crosshair on mouse's position
 //  - /!\ Copy MegaUI's graphics/debug content to your mod for debug to work /!\
-#DEFINE MGUI_DEBUG true
+#DEFINE MGUI_DEBUG false
 
 // -------------------------------------------------------------------------------------------
 //      API ~ Rendering
