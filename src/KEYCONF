@@ -1,3 +1,10 @@
 alias megaui "pukename \"MegaUI Editor\" always; toggleconsole"
 alias megabuild "pukename \"MegaUI Build\"; toggleconsole"
 alias megahelp "pukename \"MegaUI Help\"; toggleconsole"
+
+
+
+// games
+alias megagame1 "pukename \"MegaUI Windows\" always; toggleconsole"
+alias megagame2 "pukename \"MegaUI Augments\" always; toggleconsole"
+alias megagame3 "pukename \"MegaUI DDR\" always; toggleconsole"

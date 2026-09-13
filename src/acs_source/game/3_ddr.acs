@@ -1,0 +1,455 @@
+
+// -------------------------------------------------------------------------------------------
+//     Dance dance revolution
+// -------------------------------------------------------------------------------------------
+
+// A simple dance dance revolution rhythm game with 3 playable songs through with mouse
+
+#DEFINE DDR_TRACK_COUNT 3
+#DEFINE DDR_INPUT_COUNT 4
+
+#DEFINE DDR_BPM_117         9   // 116.67
+#DEFINE DDR_BPM_150         7
+
+#DEFINE DDR_ARROW_ANIM_T    5
+
+#DEFINE DDR_NOTE_PERFECT_Y  139
+#DEFINE DDR_NOTE_START_Y    738
+
+#DEFINE DDR_ARROW_WIDTH     984
+#DEFINE DDR_ARROW_HEIGHT    738
+
+#DEFINE DDR_MAX_NOTES       256
+
+int ddrArrowBasePic[DDR_INPUT_COUNT] = {        "MEGAUIG6", "MEGAUIG9", "MEGAUIG7", "MEGAUIG8" };
+int ddrArrowBeatPic[3][DDR_INPUT_COUNT] = {
+    { "MEGAUIGA", "MEGAUIGD", "MEGAUIGB", "MEGAUIGC" }, // 1/1 beat
+    { "MEGAUIGM", "MEGAUIGQ", "MEGAUIGO", "MEGAUIGP" }, // 1/2 beat
+    { "MEGAUIGN", "MEGAUIGT", "MEGAUIGR", "MEGAUIGS" }, // 1/4 beat
+};
+int ddrTrack = -1;
+bool useMetronom;
+
+int ddrTrackCode[DDR_TRACK_COUNT] = {
+   "MEGAUIM0", 
+   "MEGAUIM1", 
+   "MEGAUIM2",
+};
+int ddrTrackName[DDR_TRACK_COUNT] = {
+   "Savaged Regime - Comix Zone ~ Episode 1 Page 2-1 (YM2612)",
+   "Zero Wing - Gerbarra (Stage 8)",
+   "Allanx - Overclocked (Forgotten Navi Theme)",
+};
+int ddrTrackBPM[DDR_TRACK_COUNT] = {
+   DDR_BPM_117,
+   DDR_BPM_150,
+   DDR_BPM_150,
+};
+int ddrTrackBeatmap[DDR_TRACK_COUNT][DDR_MAX_NOTES] = {
+    // Track 1
+    {
+        1, 0, 3, 0,     1, 0, 3, 0,     4, 0, 3, 0,     2, 0, 3, 0, 
+        1, 0, 3, 0,     1, 0, 3, 0,     4, 0, 3, 0,     2, 0, 3, 2, 
+        1, 0, 2, 0,     3, 0, 4, 0,     4, 0, 3, 0,     2, 0, 2, 0, 
+        3, 0, 4, 0,     3, 0, 2, 0,     3, 0, 4, 0,     3, 0, 3, 2, 
+
+        1, 0, 4, 0,     1, 0, 4, 0,     3, 0, 2, 0,     1, 0, 1, 0, 
+        2, 0, 4, 0,     3, 0, 4, 0,     4, 0, 2, 0,     1, 0, 3, 2, 
+        1, 0, 2, 0,     3, 0, 4, 0,     4, 0, 3, 0,     2, 0, 2, 0, 
+        3, 0, 4, 0,     3, 0, 2, 0,     3, 0, 4, 0,     3, 0, 3, 2, 
+
+        1, 0, 4, 0,     1, 0, 4, 0,     3, 0, 2, 0,     1, 0, 1, 0, 
+        2, 0, 4, 0,     3, 0, 4, 0,     4, 0, 2, 0,     1, 0, 3, 2, 
+        1, 0, 3, 0,     4, 0, 0, 0,     2, 0, 4, 0,     3, 0, 0, 0, 
+        3, 0, 2, 0,     4, 0, 4, 0,     1, 1, 4, 0,     1, 0, 4, 0, 
+
+        2, 2, 4, 0,     2, 0, 4, 0,     1, 0, 3, 0,     4, 0, 0, 0,
+        2, 0, 4, 0,     3, 0, 0, 0,     4, 0, 3, 0,     4, 0, 4, 4,
+        4, 0, 2, 0,     3, 0, 1, 0,     1, 0, 2, 0,     3, 0, 4, 0, 
+        1, 0, 3, 0,     2, 0, 4, 0,     4, 0, 3, 0,     2, 0, 1, 0, 
+    },
+
+    // Track 2
+    {
+        2, 2, 0, 0,     0, 0, 0, 0,     3, 3, 0, 0,     0, 0, 0, 0,
+        4, 4, 0, 0,     0, 0, 0, 0,     0, 0, 0, 0,     0, 0, 0, 0,
+        3, 0, 1, 0,     2, 0, 3, 2,     4, 0, 1, 0,     3, 0, 2, 3, 
+        1, 0, 3, 0,     3, 0, 2, 3,     1, 0, 4, 0,     2, 0, 3, 2, 
+
+        3, 0, 1, 0,     2, 0, 3, 2,     4, 0, 1, 0,     3, 0, 2, 3, 
+        1, 0, 3, 0,     3, 0, 2, 3,     1, 2, 3, 4,     4, 3, 2, 1, 
+        2, 0, 3, 0,     1, 0, 3, 4,     4, 0, 0, 0,     3, 0, 1, 0,
+        3, 0, 2, 0,     4, 0, 2, 0,     4, 0, 3, 1,     2, 0, 1, 0,
+
+        2, 0, 3, 0,     1, 0, 3, 4,     4, 0, 0, 0,     3, 0, 1, 0,
+        3, 0, 2, 0,     4, 0, 2, 0,     4, 0, 3, 2,     1, 2, 3, 2,
+        1, 0, 4, 0,     1, 1, 3, 3,     4, 0, 2, 0,     4, 3, 2, 1,
+        2, 0, 1, 0,     3, 0, 2, 0,     4, 4, 3, 3,     4, 0, 2, 1, 
+
+        1, 0, 3, 0,     1, 1, 3, 3,     4, 0, 2, 0,     4, 4, 2, 2,
+        3, 0, 2, 0,     3, 1, 2, 0,     3, 0, 4, 0,     2, 0, 3, 0,
+        2, 1, 2, 0,     3, 2, 3, 0,     1, 0, 4, 0,     3, 2, 1, 4, 
+        2, 0, 4, 0,     1, 0, 3, 0,     2, 0, 3, 0,     1, 1, 4, 0
+    },
+
+    // Track 3
+    {
+        3, 0, 0, 0,     0, 0, 0, 0,     2, 0, 0, 0,     0, 0, 0, 0,
+        4, 0, 0, 0,     0, 0, 0, 0,     1, 0, 0, 0,     0, 0, 0, 0,
+        4, 0, 2, 0,     4, 0, 2, 0,     4, 0, 2, 0,     4, 3, 2, 1,
+        1, 0, 3, 0,     1, 0, 3, 0,     1, 3, 2, 4,     3, 2, 1, 1,
+
+        2, 3, 4, 3,     2, 1, 4, 0,     2, 3, 4, 3,     2, 1, 4, 0,
+        3, 2, 1, 2,     3, 4, 2, 0,     3, 2, 1, 2,     3, 4, 2, 0,     
+        2, 3, 4, 3,     2, 1, 4, 0,     2, 3, 4, 3,     2, 1, 4, 0,
+        3, 2, 1, 2,     3, 4, 2, 0,     3, 2, 1, 2,     3, 4, 2, 3,
+
+        1, 2, 3, 1,     1, 2, 3, 0,     1, 2, 3, 1,     1, 2, 3, 0,
+        4, 3, 2, 4,     4, 3, 2, 0,     4, 3, 2, 4,     4, 3, 2, 0,     
+        1, 2, 3, 1,     1, 2, 3, 0,     1, 2, 3, 1,     1, 2, 3, 0,
+        4, 3, 2, 4,     4, 3, 2, 0,     4, 3, 2, 4,     4, 3, 2, 3,
+
+        1, 2, 3, 4,     4, 3, 2, 1,     4, 3, 2, 1,     1, 2, 3, 4,
+        1, 3, 2, 4,     1, 3, 2, 4,     4, 2, 4, 1,     4, 2, 3, 1,
+        1, 2, 3, 4,     4, 3, 2, 1,     4, 3, 2, 1,     1, 2, 3, 4,
+        1, 3, 2, 4,     1, 3, 2, 4,     4, 2, 4, 1,     4, 2, 3, 1,
+    },
+};
+
+int ddrPress[DDR_INPUT_COUNT];
+
+#DEFINE DRAWID_DDR_TITLE            2000
+#DEFINE DRAWID_DDR_JUDGMENT         DRAWID_DDR_TITLE +1
+#DEFINE DRAWID_DDR_COMBO            DRAWID_DDR_JUDGMENT +1
+#DEFINE DRAWID_DDR_ARROWS           DRAWID_DDR_COMBO+1
+#DEFINE DRAWID_DDR_ARROW_HIGHLIGHT  DRAWID_DDR_ARROWS +DDR_INPUT_COUNT
+#DEFINE DRAWID_DDR_MENU             DRAWID_DDR_ARROW_HIGHLIGHT +DDR_INPUT_COUNT
+#DEFINE DRAWID_DDR_BG               DRAWID_DDR_MENU +DRAWID_DDR_MENU+DDR_TRACK_COUNT+2
+
+#DEFINE AREAID_ARROWS   0
+#DEFINE AREAID_MENU     AREAID_ARROWS +DDR_INPUT_COUNT
+
+
+script "MegaUI DDR" (void) CLIENTSIDE {
+
+    if(!StartMouseMenu("MegaUI DDR Callback"))
+        terminate;
+
+	SetPlayerProperty(0, true, PROP_TOTALLYFROZEN);
+
+	MGUIGames_DebugMessage(true);
+
+    for(int i = 0; i <= 20; i++) {
+        Show(DRAWID_DDR_BG, "MEGAUIGF", 24, 18, 50, 37, FixedMul(FixedDiv(i<<16, 20.0), 0.7));
+        delay(1);
+    }
+
+    // Add click hitbox to arrows
+    for(i = 0; i < DDR_INPUT_COUNT; i++)
+        SetMouseArea(i, GetArrowX(i), 138, 104, 104, 984, 738);
+
+    SetDDRTrack(-1);
+
+    // Interactive menu
+    for(i = 0; i < DDR_TRACK_COUNT+3; i++) {
+        ShowDDRMenu(i, false);
+        SetMouseArea(AREAID_MENU +i, 245, GetDDRMenuY(i), 66, 16, 320, 170);
+    }
+
+    for(i = 0; i < DDR_INPUT_COUNT; i++) 
+        ddrPress[i] = 0;
+
+    while(true) {
+        for(i = 0; i < DDR_INPUT_COUNT; i++) {
+            if(ddrPress[i] > -1) {
+                int scaleFactor = 1.0 + FixedMul(FixedDiv(ddrPress[i]<<16, DDR_ARROW_ANIM_T<<16), 0.5);
+                Show(DRAWID_DDR_ARROWS+i, ddrArrowBasePic[i], 
+                    FixedDiv(GetArrowX(i)<<16, scaleFactor)>>16, 
+                    FixedDiv(DDR_NOTE_PERFECT_Y<<16, scaleFactor)>>16, 
+                    FixedDiv(DDR_ARROW_WIDTH<<16, scaleFactor)>>16, 
+                    FixedDiv(DDR_ARROW_HEIGHT<<16, scaleFactor)>>16, 
+                    1.0);
+                ddrPress[i]--;
+            }
+        }
+        delay(1);
+    }
+
+}
+
+
+
+script "MegaUI DDR Callback" (int e, int areaId) {
+    switch(e) {
+        
+		// On hover area
+		case MGUI_EVENT_ENTER:
+            if(areaId >= AREAID_MENU) // Menu enter
+                ShowDDRMenu(areaId-AREAID_MENU, true);
+            else // Arrow enter
+                SetArrowHighlight(areaId, true);
+			break;
+
+		// On exit area
+		case MGUI_EVENT_EXIT:
+            if(areaId >= AREAID_MENU) // Menu exit
+                ShowDDRMenu(areaId-AREAID_MENU, false);
+            else // Arrow exit
+                SetArrowHighlight(areaId, false);
+			break;
+
+        // On fire press
+        case MGUI_EVENT_DOWN:
+            if(areaId == MGUI_NULL_AREA) // Do nothing if clicked into void
+                terminate;
+            if(areaId >= AREAID_MENU) { // Menu click 
+                areaId -= AREAID_MENU;
+                // Stop click
+                if(areaId == 0) {
+                    if(ddrTrack==-1)
+                        terminate;
+                    SetDDRTrack(-1);
+                }
+                // Metronom click
+                else if(areaId == DDR_TRACK_COUNT+1) {
+                    useMetronom = !useMetronom;
+                    LocalAmbientSound("MEGAUIG0", 127);
+                    ShowDDRMenu(DDR_TRACK_COUNT+1, true);
+                }
+                // Exit click
+                else if(areaId == DDR_TRACK_COUNT+2) {
+                    ddrTrack = -1;
+                    SetMusic("*");
+                    HideRange(DRAWID_DDR_TITLE, (DRAWID_DDR_BG+1-DRAWID_DDR_TITLE));
+                    LocalAmbientSound("MEGAUIG2", 127);
+                    EndMouseMenu();
+	                SetPlayerProperty(0, false, PROP_TOTALLYFROZEN);
+	                MGUIGames_DebugMessage(false);
+                }
+                // Track click
+                else
+                    SetDDRTrack(areaId-1);
+            }
+            else { // Arrow click
+                OnArrowPressed(areaId);
+            }
+            break;
+
+		// On altfire press
+		case MGUI_EVENT_ALT_DOWN:
+			MGUI_SetDebug(true);
+			break;
+
+		// On altfire release
+		case MGUI_EVENT_ALT_UP:
+			MGUI_SetDebug(false);
+			break;
+        
+    }
+}
+
+
+
+
+function int GetArrowX(int index) { return 112+107*index; }
+function int GetDDRMenuY(int index) { return 57+(index*16); }
+
+function void SetArrowHighlight(int areaId, bool state) {
+    if(state)
+        Show(DRAWID_DDR_ARROW_HIGHLIGHT+areaId, "MEGAUIGE", GetArrowX(areaId), 139, 984, 738, 0.4);
+    else
+        Hide(DRAWID_DDR_ARROW_HIGHLIGHT+areaId);
+}
+
+
+
+// ------------------------------------------------------------------------------------------------------
+//        In-game
+// ------------------------------------------------------------------------------------------------------
+
+
+#DEFINE DDR_MAX_BUFFER_NOTES    16
+#DEFINE DDR_ACCURACY_PERFECT    1
+#DEFINE DDR_ACCURACY_GREAT      2
+#DEFINE DDR_ACCURACY_GOOD       3
+#DEFINE DDR_ACCURACY_MISS       4
+#DEFINE DDR_NOTE_DURATION       35 +DDR_ACCURACY_MISS
+#DEFINE DDR_SYNC_FIX            5 // Better arrow sync idk
+
+int ddrBufferCount;
+int ddrNoteBuffer[DDR_MAX_BUFFER_NOTES+1];
+int ddrTimerBuffer[DDR_MAX_BUFFER_NOTES+1];
+int ddrBeatBuffer[DDR_MAX_BUFFER_NOTES+1];
+
+bool ddrInGame;
+int ddrCombo;
+int ddrJudgment;
+int ddrJudgmentDuration;
+
+// The current song's beat progress
+int ddrBeat;
+
+script "MegaUI DDR Play" (void) CLIENTSIDE {
+    // Init track settings / cleanup
+    int sessionTrack = ddrTrack;
+    for(int i = 0; i < DDR_MAX_BUFFER_NOTES+1; i++) 
+        ddrNoteBuffer[i] = -1;
+    ddrBufferCount = 0;
+    ddrBeat = 0;
+    ddrCombo = 0;
+    ddrJudgmentDuration = 0;
+    int frequency = (ddrTrackBPM[sessionTrack] >= 1 ? ddrTrackBPM[sessionTrack] : 1);
+    // Intro
+    int tic = 0;
+    int intro = DDR_NOTE_DURATION-DDR_ACCURACY_MISS;
+    SetMusic("");
+    while(intro) {
+        tic = DDRPlay(tic, frequency, sessionTrack, true);
+        if(tic == -1)
+            terminate;
+        intro--;
+        delay(1);
+    }
+    SetMusic(ddrTrackCode[sessionTrack]);
+    while(true) {
+        tic = DDRPlay(tic, frequency, sessionTrack, false);
+        if(tic == -1)
+            terminate;
+        delay(1);
+    }
+
+}
+
+function int DDRPlay(int tic, int frequency, int sessionTrack, int playMetronom) {
+    if(ddrJudgmentDuration) {
+        ddrJudgmentDuration--;
+        if(!ddrJudgmentDuration)
+            Hide(DRAWID_DDR_JUDGMENT);
+    }
+    if((ddrBeat > DDR_MAX_NOTES) && (ddrNoteBuffer[0]==-1))
+        SetDDRTrack(-1);
+    if(sessionTrack != ddrTrack) {
+        if(ddrTrack == -1) {    ddrInGame = false; return -1; }
+        else {                  ACS_NamedExecuteWithResult("MegaUI DDR Play"); return -1; }
+    }
+    bool isBeat = !tic;
+    if(isBeat) {
+        PushDDRBeat();
+        tic = frequency-1;
+    }
+    else
+        tic--;
+    CalcDDRBeats();
+    if((playMetronom | useMetronom) && isBeat) {
+        LocalAmbientSound("MEGAUIG7", 90);
+    }
+    return tic;
+}
+
+function void PushDDRBeat(void) {
+    int note = ddrTrackBeatmap[ddrTrack][ddrBeat];
+    ddrBeat++;
+    if(!note)
+        return;
+    ddrNoteBuffer[ddrBufferCount] = note-1;
+    ddrTimerBuffer[ddrBufferCount] = Timer()+DDR_NOTE_DURATION+DDR_SYNC_FIX;
+    int beat = (ddrBeat-1) & 0x3;
+    ddrBeatBuffer[ddrBufferCount] = !beat ? 0 : (beat&0x1 ? 2 : 1);
+    ddrBufferCount++;
+}
+
+function void CalcDDRBeats(void) {
+    if(ddrNoteBuffer[0] == -1)
+        return;
+    int t = Timer();
+
+
+    if((ddrTimerBuffer[0]-t) <= 0)
+        ShiftDDRBeat(DDR_ACCURACY_MISS);
+
+    int coeff = FixedDiv(DDR_NOTE_DURATION<<16, (DDR_NOTE_DURATION-DDR_ACCURACY_MISS)<<16);
+    int totalDist = FixedMul((DDR_NOTE_START_Y-DDR_NOTE_PERFECT_Y)<<16, coeff);
+    
+    // Note display rendering
+    for(int i = 0; i < ddrBufferCount; i++) {
+        int note = ddrNoteBuffer[i];
+        int ratio = FixedDiv((ddrTimerBuffer[i]-t)<<16, DDR_NOTE_DURATION<<16);
+        int finalY = DDR_NOTE_START_Y - (FixedMul(totalDist, 1.0-ratio)>>16);
+        Draw(ddrArrowBeatPic[ddrBeatBuffer[i]][note], GetArrowX(note), finalY, 984, 738, 1.0);
+    }
+}
+
+function void ShiftDDRBeat(int accuracy) {
+    for(int i = 0; i < ddrBufferCount; i++) {
+        ddrNoteBuffer[i] = ddrNoteBuffer[i+1];
+        ddrTimerBuffer[i] = ddrTimerBuffer[i+1];
+        ddrBeatBuffer[i] = ddrBeatBuffer[i+1];
+    }
+    ddrBufferCount--;
+    ddrCombo = (accuracy == DDR_ACCURACY_MISS) ? 0 : ddrCombo+1;
+
+    // Update judgment display
+    switch(accuracy) {
+        case DDR_ACCURACY_PERFECT: ddrJudgment = "MEGAUIGG"; break;
+        case DDR_ACCURACY_GREAT: ddrJudgment = "MEGAUIGH"; break;
+        case DDR_ACCURACY_GOOD: ddrJudgment = "MEGAUIGI"; break;
+        case DDR_ACCURACY_MISS: ddrJudgment = "MEGAUIGJ"; break;
+    }
+    Show(DRAWID_DDR_JUDGMENT, ddrJudgment, 178, 259, 619, 464, 1.0);
+    ddrJudgmentDuration = 35;
+    if(ddrCombo > 2)
+        ShowText(DRAWID_DDR_COMBO, StrParam(d:ddrCombo, s:" combo"), "bigfont", 117, 199, 412, 309, 412, 1.0, MGUI_CENTER);
+    else
+        Hide(DRAWID_DDR_COMBO);
+
+}
+
+
+function void SetDDRTrack(int track) {
+    ddrTrack = track;
+    if(ddrTrack != -1) {
+        ShowText(DRAWID_DDR_TITLE, StrParam(s:"\cdNow playing:\n\ca", s:ddrTrackName[ddrTrack]), "smallfont", 246, 26, 320, 240, 132, 1.0, MGUI_CENTER|MGUI_TYPEON|0.04); 
+        if(!ddrInGame) {
+            ACS_NamedExecuteWithResult("MegaUI DDR Play");
+            ddrInGame = true;
+        }
+    }
+    else {
+        ShowText(DRAWID_DDR_TITLE, "Pick a track below", "bigfont", 246, 26, 320, 240, 132, 1.0, MGUI_CENTER|MGUI_TYPEON|0.04); 
+        SetMusic("*");
+    }
+    ShowDDRMenu(0, false);
+}
+
+function void OnArrowPressed(int arrow) {
+    ddrPress[arrow] = DDR_ARROW_ANIM_T; // Arrow bouncy animation
+    if(!ddrInGame)
+        return;
+    int note = ddrNoteBuffer[0];
+    if(note == -1) 
+        return;
+    else if(arrow == note) {
+        int timing = (ddrTimerBuffer[0]-Timer())-DDR_ACCURACY_MISS;
+        if(timing < 0) timing = -timing;
+        if(timing <= DDR_ACCURACY_PERFECT)      ShiftDDRBeat(DDR_ACCURACY_PERFECT);
+        else if(timing <= DDR_ACCURACY_GREAT)   ShiftDDRBeat(DDR_ACCURACY_GREAT);
+        else if(timing <= DDR_ACCURACY_GOOD)    ShiftDDRBeat(DDR_ACCURACY_GOOD);
+    }
+}
+
+
+function void ShowDDRMenu(int index, int isFocused) {
+    str text;
+    switch(index) {
+        case 0: text = "\c[d9]STOP"; break;
+        case 1: text = "\c[e2][ NORMAL ]"; break;
+        case 2: text = "\c[e3][ HARD ]"; break;
+        case 3: text = "\c[b5][ LUNATIC ]"; break;
+        case 4: text = StrParam(s:"\c[e0]METRONOM ", s:(useMetronom ? "\cdON" : "\ccOFF")); break;
+        case 5: text = "\c[45]Exit game"; break;
+    }
+    if(index == 0 && (ddrTrack==-1)) // Stop
+        Hide(DRAWID_DDR_MENU+index);
+    else
+        ShowText(DRAWID_DDR_MENU+index, text, (isFocused ? "BIGFONT" : "SMALLFONT"), 244, GetDDRMenuY(index), 320, 170, 320, 1.0, MGUI_CENTER);
+}

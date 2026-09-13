@@ -9,3 +9,5 @@
 #include "events.acs"
 #include "generator.acs"
 
+#include "../game/megagame.acs"
+

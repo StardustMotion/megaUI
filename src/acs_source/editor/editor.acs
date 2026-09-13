@@ -36,7 +36,7 @@ int     mguiEditorMouseType,
 
 script "MegaUI Editor" (void) CLIENTSIDE {
     if(!StartMouseMenu("MegaUI Editor Event")) {
-        MGUIEditor_Log("MegaUI Editor is already running.");
+        MGUIEditor_Log("MegaUI Editor (or a another mod's mouse menu) is already running.");
         MGUIEditor_Play(MGUI_SFX_ERROR);
         terminate;
     }
@@ -215,7 +215,7 @@ function void MGUIEditor_SetMode(int mode, bool isSilent) {
             case MGUI_EDITOR_STAMP_GRAPHIC:     stringBuilder = "graphic"; break;
             case MGUI_EDITOR_STAMP_MOUSE_AREA:  stringBuilder = "mouse area"; break;
         }
-        stringBuilder = StrParam(s:"Brush [", s:"\c[72]", s:stringBuilder, s:"\c[p7]", s:"]");
+        stringBuilder = StrParam(s:"Brush [", s:"\c[72]", s:stringBuilder, s:"\c[z2]", s:"]");
     }
     MGUIEditor_ShowBanner(stringBuilder);
 }
@@ -233,7 +233,7 @@ function void MGUIEditor_SetDefaultMouseBrush(void) {
 
 function void MGUIEditor_ShowBanner(str text) {
     mguiBannerTimer = 18+((StrLen(text)*5)/4);
-    mguiBannerText = StrParam(s:"\c[p7]", s:text);
+    mguiBannerText = StrParam(s:"\c[z2]", s:text);
 }
 
 function void MGUIEditor_SetInspectorPosition(int state) {

@@ -1,0 +1,112 @@
+
+
+// -------------------------------------------------------------------------------------------
+//     Cards of Augments
+// -------------------------------------------------------------------------------------------
+
+// A static menu with three big buttons to click on, to receive an item
+
+#DEFINE AUGMENTS_COUNT     3
+
+#DEFINE DRAWID_AUGMENT_TITLE 		2000
+#DEFINE DRAWID_AUGMENTS        		DRAWID_AUGMENT_TITLE +1
+    // Augment highlight       +0
+    // Augment name            +1
+    // Augment picture         +2
+    // Augment background      +3
+#DEFINE DRAWID_AUGMENT_END          DRAWID_AUGMENTS + (AUGMENTS_COUNT * 4)
+
+int augmentName[AUGMENTS_COUNT] = { "\chGreen \cdarmor" , "\cgNow that its a weapon.", "\cfbag of clips" };
+int augmentGraphic[AUGMENTS_COUNT] = { "MEGAUIG1", "MEGAUIG2", "MEGAUIG3" };
+int augmentPicX[AUGMENTS_COUNT] = { 105, 1461, 1359 }; 			// X Position of the augment picture
+int augmentPicY[AUGMENTS_COUNT] = { 216, 1139, 458 };			// Y Position
+int augmentPicHudWidth[AUGMENTS_COUNT] = { 564, 2730, 1666 };	// SetHudSize width of the augment picture
+int augmentPicHudHeight[AUGMENTS_COUNT] = { 423, 2047, 850 };	// SetHudSize height
+
+script "MegaUI Augments" (void) CLIENTSIDE {
+
+	// Start the mouse menu / receive callback events in given script
+    if(!StartMouseMenu("MegaUI Augments Callback"))
+        terminate;
+	SetPlayerProperty(0, true, PROP_TOTALLYFROZEN);
+
+	MGUIGames_DebugMessage(true);
+
+	// Title - write with 0.12s delay between each character (HUDMSG_TYPEON)
+	ShowText(DRAWID_AUGMENT_TITLE, "\cdCOLLECT YOURE TREASURE!!", "bigfont", 160, 29, 320, 240, 320, 1.0, MGUI_TYPEON|MGUI_CENTER|0.12);
+	
+	// Draw augments
+    for(int i = 0; i < AUGMENTS_COUNT; i++) {
+        int x = GetAugmentPositionX(i);
+        int augmentBaseId = DRAWID_AUGMENTS+(i*4),
+			//augmentHighlightId = augmentBaseId 	+0,
+            augmentNameId = augmentBaseId         	+1,
+            augmentPicId = augmentBaseId         	+2,
+            augmentBackgroundId = augmentBaseId   	+3;
+        ShowText(augmentNameId, augmentName[i], "SMALLFONT", 	x, 110, 320, 300, 66, 1.0, MGUI_CENTER);
+        Show(augmentPicId, augmentGraphic[i],					augmentPicX[i], augmentPicY[i], augmentPicHudWidth[i], augmentPicHudHeight[i], 1.0);
+        Show(augmentBackgroundId, "megauig0", 					x, 120, 			320, 240, 1.0);
+        SetMouseArea(i, 										x, 122, 82, 128, 	320, 240);
+    }
+}
+
+// Receive mouse events
+script "MegaUI Augments Callback" (int e, int areaId) {
+	switch(e) {
+
+		// On hover area
+		case MGUI_EVENT_ENTER:
+			SetAugmentHighlight(areaId, true);
+			LocalAmbientSound("MEGAUIG2", 127);
+			break;
+
+		// On exit area
+		case MGUI_EVENT_EXIT:
+			SetAugmentHighlight(areaId, false);
+			break;
+
+
+		// On fire press
+		case MGUI_EVENT_DOWN:
+			switch(areaId) {
+				case 0: GiveInventory("GreenArmor", 1); break;
+				case 1: GiveInventory("RocketLauncher", 1); break;
+				case 2: GiveInventory("Clip", 200); break;
+			}
+			LocalAmbientSound("MEGAUIG1", 127);
+			for(int i = DRAWID_AUGMENT_TITLE; i < DRAWID_AUGMENT_END; i++)
+				Hide(i);
+			SetPlayerProperty(0, false, PROP_TOTALLYFROZEN);
+
+			// Stops the mouse system
+			EndMouseMenu();
+			MGUIGames_DebugMessage(false);
+			break;
+
+		// On altfire press
+		case MGUI_EVENT_ALT_DOWN:
+			MGUI_SetDebug(true);
+			break;
+
+		// On altfire release
+		case MGUI_EVENT_ALT_UP:
+			MGUI_SetDebug(false);
+			break;
+	}
+}
+
+function void SetAugmentHighlight(int areaId, bool state) {
+	int hudMessageId = DRAWID_AUGMENTS + (areaId*4);
+	if(state)
+		// Lighten the selected augment by stamping a 30% opaque white graphic over it
+        Show(hudMessageId, "megauig4", GetAugmentPositionX(areaId), 120, 320, 240, 0.3);
+	else
+		Hide(hudMessageId);
+}
+
+function int GetAugmentPositionX(int augmentIndex) { 
+	return 60+(augmentIndex*100); 
+}
+
+
+

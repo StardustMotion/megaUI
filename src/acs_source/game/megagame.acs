@@ -1,0 +1,17 @@
+
+//#library "megagame"
+//#include "zcommon.acs"
+//#include "megaUI.acs"
+
+#DEFINE DRAWID_MEGAUIGAMES_DEBUG 1200
+function void MGUIGames_DebugMessage(bool state) {
+    if(state)
+	    ShowText(DRAWID_MEGAUIGAMES_DEBUG, "\cvHold altfire to enable debug and see mouse areas.", "smallfont", 
+            320, 440, 640, 480, 640, 1.0, MGUI_CENTER);
+    else
+        Hide(DRAWID_MEGAUIGAMES_DEBUG);
+}
+
+#include "1_windows.acs"
+#include "2_augments.acs"
+#include "3_ddr.acs"
