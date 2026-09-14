@@ -28,7 +28,7 @@ script "MegaUI Build" (void) CLIENTSIDE {
             x = MGUIEditor_ToHud(mguiEditorStampX[slot], hudWidth),
             y = MGUIEditor_ToHud(mguiEditorStampY[slot], hudHeight);
         str alpha = mguiEditorStampAlpha[slot] == 1.0 ? "1.0" : StrParam(f:mguiEditorStampAlpha[slot]);
-        int drawId = (MGUI_EDITOR_STAMP_MAX-slot);
+        int drawId = (mguiEditorStampCount-1) - slot;
 
         switch(mguiEditorStampType[slot]) {
 

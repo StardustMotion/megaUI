@@ -4,7 +4,12 @@
 //     Cards of Augments
 // -------------------------------------------------------------------------------------------
 
-// A static menu with three big buttons to click on, to receive an item
+/*  
+        [ Simple static menu ]
+
+	> Highlight item upon hovering with mouse
+	> Give different reward based on the mouse area clicked
+*/
 
 #DEFINE AUGMENTS_COUNT     3
 

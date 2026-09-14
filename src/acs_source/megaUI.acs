@@ -102,7 +102,9 @@ function bool   StartMouseMenu(str scriptName) {    return ACS_NamedExecuteWithR
 // Stops mouse menu
 function void   EndMouseMenu(void) {                ACS_NamedExecuteWithResult("MegaUI API", 0); }
 
-// Registers an area that sends mouse events. Width/height is the area's dimensions, as if it was a graphic file
+/*  Registers an area that sends mouse events. Width/height is the area's dimensions, as if it was a graphic file
+    > areaId must be >= 0
+    > When the mouse is within several areas, only the one with lowest areaId will trigger events (similar to hudMessage id priority) */
 function void   SetMouseArea(int areaId, int x, int y, int width, int height, int hudWidth, int hudHeight) { 
     ACS_NamedExecuteWithResult("MegaUI SetMouseArea API", areaId, (y<<16)|x, (height<<16)|width, (hudHeight<<16)|hudWidth); }
 

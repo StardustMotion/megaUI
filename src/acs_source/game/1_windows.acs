@@ -3,7 +3,12 @@
 //     Windows
 // -------------------------------------------------------------------------------------------
 
-// Close all opened windows mini game
+/*  
+        [ Close all opened windows mini game ]
+
+    > For simplicity, only the top most window (lowest areaId) can be closed
+    > The cursor is custom ; changes upon hovering close button
+*/
 
 #DEFINE WINDOWS_MAX     16
 
@@ -89,7 +94,7 @@ script "MegaUI Windows Callback" (int e, int areaId) {
         // On fire press
 		case MGUI_EVENT_DOWN:
 
-            // For simplicity, only the top most window can be closed
+            // If that's the top most one, close it
             if(areaId == (WINDOWS_MAX-windowCount)) {
                 DeleteMouseArea(areaId);
                 Hide(DRAWID_WINDOWS_END-windowCount);
