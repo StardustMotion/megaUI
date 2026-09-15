@@ -9,12 +9,7 @@
 		"stamps.acs",
 		"editor.acs",
 		"events.acs",
-		"generator.acs",
-
-		"megagame.acs",
-		"1_windows.acs",
-		"2_augments.acs",
-		"3_ddr.acs"
+		"generator.acs"
 	],
 	"file_name": "megaUI",
 	"version": "1.0.0"

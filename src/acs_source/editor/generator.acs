@@ -11,7 +11,9 @@ script "MegaUI Build" (void) CLIENTSIDE {
         MGUIEditor_Play(MGUI_SFX_ERROR);
         terminate;
     }
-    int mouseAreaId = 1;
+    int mouseAreaId = 0,
+        hudMessageId = 0;
+        
     str stringBuilder = "\n
         //===================================//\n
         //          Mega UI ACS [START]      //\n
@@ -28,14 +30,13 @@ script "MegaUI Build" (void) CLIENTSIDE {
             x = MGUIEditor_ToHud(mguiEditorStampX[slot], hudWidth),
             y = MGUIEditor_ToHud(mguiEditorStampY[slot], hudHeight);
         str alpha = mguiEditorStampAlpha[slot] == 1.0 ? "1.0" : StrParam(f:mguiEditorStampAlpha[slot]);
-        int drawId = (mguiEditorStampCount-1) - slot;
 
         switch(mguiEditorStampType[slot]) {
 
             // Text stamp
             case MGUI_EDITOR_STAMP_TEXT:
                 stringBuilder = StrParam(s:stringBuilder, s:"\nShowText(",
-                    s:"MGUI_DRAWID+", d:drawId, 
+                    s:"50000+", d:hudMessageId, 
                     s:", \"",   s:mguiEditorStampContent[slot], 
                     s:"\", \"", s:mguiEditorStampFont[slot], 
                     s:"\", ",   d:x,
@@ -46,12 +47,13 @@ script "MegaUI Build" (void) CLIENTSIDE {
                     s:", ",     s:alpha,
                     s:", MGUI_CENTER);"
                 );
+                hudMessageId++;
                 break;
 
             // Graphic stamp
             case MGUI_EDITOR_STAMP_GRAPHIC:
                 stringBuilder = StrParam(s:stringBuilder, s:"\nShow(",
-                    s:"MGUI_DRAWID+", d:drawId, 
+                    s:"50000+", d:hudMessageId, 
                     s:", \"",   s:mguiEditorStampContent[slot], 
                     s:"\", ",   d:x,
                     s:", ",     d:y,
@@ -60,6 +62,7 @@ script "MegaUI Build" (void) CLIENTSIDE {
                     s:", ",     s:alpha,
                     s:");"
                 );
+                hudMessageId++;
                 break;
 
             // Mouse area stamp
@@ -67,10 +70,10 @@ script "MegaUI Build" (void) CLIENTSIDE {
                 stringBuilder = StrParam(s:stringBuilder, s:"\nSetMouseArea(", d:mouseAreaId,
                     s:", ",     d:x,
                     s:", ",     d:y,
-                    s:", ",     d:mguiEditorStampSizeX[slot],
-                    s:", ",     d:mguiEditorStampSizeY[slot],
                     s:", ",     d:hudWidth,
                     s:", ",     d:hudHeight,
+                    s:", ",     d:mguiEditorStampSizeX[slot],
+                    s:", ",     d:mguiEditorStampSizeY[slot],
                     s:");"
                 );
                 mouseAreaId++;

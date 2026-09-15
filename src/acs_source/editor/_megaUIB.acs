@@ -1,4 +1,4 @@
-#library "_mguiEdt"
+#library "_megaUIB"
 
 #include "zcommon.acs"
 #include "../megaUI.acs"
@@ -8,6 +8,3 @@
 #include "editor.acs"
 #include "events.acs"
 #include "generator.acs"
-
-#include "../game/megagame.acs"
-
