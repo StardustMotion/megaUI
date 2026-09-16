@@ -5,11 +5,9 @@
 
 		"megaUI.acs", 
 
-		"common.acs",
-		"stamps.acs",
-		"editor.acs",
-		"events.acs",
-		"generator.acs"
+		"common.acs", "stamps.acs", "editor.acs", "events.acs", "generator.acs",
+
+		"1_windows.acs", "2_augments.acs", "3_ddr.acs", "4_loadout.acs"
 	],
 	"file_name": "megaUI",
 	"version": "1.0.0"

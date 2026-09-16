@@ -61,7 +61,7 @@ function void Hide(int hudMessageId) {
     HudMessageBold(s:""; HUDMSG_PLAIN, hudMessageId, 0, 0, 0, 0, 0); 
 }
 
-// Erase <count> consecutive rendered elements, starting from <hudMessageId>
+// Shorthand for <count> consecutive Erase() calls, starting from <hudMessageId>
 function void HideRange(int hudMessageId, int count) {
     for(int i = 0; i < count; i++) 
         Hide(hudMessageId+i);
@@ -126,6 +126,12 @@ function void   SetMouseArea(int areaId, int x, int y, int hudWidth, int hudHeig
 
 // Unregisters an area
 function void   DeleteMouseArea(int areaId) {       ACS_NamedExecuteWithResult("MegaUI API", 1, areaId); }
+
+// Shorthand for <count> consecutive DeleteMouseArea() calls, starting from <areaId>
+function void   DeleteMouseAreaRange(int areaId, int count) {
+    for(int i = 0; i < count; i++) 
+        DeleteMouseArea(areaId+i);
+}
 
 // Change mouse speed multiplier (default 1.0)
 function void   SetMouseSpeed(int speed) {          ACS_NamedExecuteWithResult("MegaUI API", 2, speed); }
@@ -485,8 +491,6 @@ script "MegaUI Mouse Menu" (int scriptName) CLIENTSIDE {
         else if(inputDelta & MGUI_MOUSE_ALT_INTERACT)
 			ACS_NamedExecuteWithResult(mguiMouseScript, (input & MGUI_MOUSE_ALT_INTERACT) ? MGUI_EVENT_ALT_DOWN : MGUI_EVENT_ALT_UP, area);
         if(area != prevArea) {
-            if(area != MGUI_NULL_AREA)      
-                ACS_NamedExecuteWithResult(mguiMouseScript, MGUI_EVENT_ENTER, area);
             if(prevArea != MGUI_NULL_AREA)  {
                 // Won't call EXIT event on an area that just got deleted
                 for(i = 0; i < mguiMouseAreaCount; i++) 
@@ -495,6 +499,8 @@ script "MegaUI Mouse Menu" (int scriptName) CLIENTSIDE {
                         break;
                     }
             }
+            if(area != MGUI_NULL_AREA)      
+                ACS_NamedExecuteWithResult(mguiMouseScript, MGUI_EVENT_ENTER, area);
             prevArea = area;
         }
 
@@ -542,4 +548,15 @@ function void MGUI_SetDebugAreaDisplay(int slot, int state) {
 function void MGUI_SetDebugAreaDisplayAll(int state) {
     for(int i = 0; i < mguiMouseAreaCount; i++)
         MGUI_SetDebugAreaDisplay(i, state);
+}
+
+// Stops mouse menu on game enter / spectate since the script gets interrupted 
+script "MegaUI ENTER" ENTER CLIENTSIDE {
+    if(ConsolePlayerNumber() == PlayerNumber())
+        EndMouseMenu();
+}
+
+script "MegaUI DISCONNECT" (int player) DISCONNECT CLIENTSIDE {
+    if(ConsolePlayerNumber() == player)
+        EndMouseMenu();
 }
