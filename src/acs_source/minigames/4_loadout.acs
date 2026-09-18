@@ -1,0 +1,327 @@
+// -------------------------------------------------------------------------------------------
+//     Item loadout 
+// -------------------------------------------------------------------------------------------
+
+/*  
+		[ A basic menu with overlaying mouse areas ]
+	
+	> Enable/disable 80 mouse areas upon item selection menu open/close
+	> Item mouse areas have lower id than slot mouse areas, so they take priority when overlapping
+*/
+
+#DEFINE LOADOUT_COUNT 		3
+#DEFINE LOADOUT_MAX			1000 // max items in the table
+#DEFINE LOADOUT_COLUMNS 	8	
+#DEFINE LOADOUT_ROWS		8
+#DEFINE LOADOUT_PAGE_SIZE	(LOADOUT_COLUMNS*LOADOUT_ROWS)
+#DEFINE LOADOUT_PAGE_MAX	1 + (LOADOUT_MAX/LOADOUT_PAGE_SIZE)
+#DEFINE LOADOUT_ANIMATION_T 8
+
+// Mouse area ids
+#DEFINE AREAID_SWAP_LEFT			0
+#DEFINE AREAID_SWAP_RIGHT			AREAID_SWAP_LEFT 	+1
+#DEFINE AREAID_ITEMS				AREAID_SWAP_RIGHT 	+1
+#DEFINE AREAID_CONFIRM				AREAID_ITEMS 		+LOADOUT_PAGE_SIZE
+#DEFINE AREAID_SLOTS				AREAID_CONFIRM		+1
+
+// HudMessageIds
+#DEFINE DRAWID_LOADOUT_RETICLE		2000
+#DEFINE DRAWID_LOADOUT_ITEM_NAME	DRAWID_LOADOUT_RETICLE		+1
+#DEFINE DRAWID_LOADOUT_PAGE			DRAWID_LOADOUT_ITEM_NAME	+1
+#DEFINE DRAWID_LOADOUT_SWAP_LEFT	DRAWID_LOADOUT_PAGE			+1
+#DEFINE DRAWID_LOADOUT_SWAP_RIGHT	DRAWID_LOADOUT_SWAP_LEFT	+1
+#DEFINE DRAWID_LOADOUT_ITEM_ICONS	DRAWID_LOADOUT_SWAP_RIGHT	+1
+#DEFINE DRAWID_LOADOUT_ITEM_MENU  	DRAWID_LOADOUT_ITEM_ICONS	+LOADOUT_PAGE_SIZE
+#DEFINE DRAWID_LOADOUT_CONFIRM		DRAWID_LOADOUT_ITEM_MENU	+1
+#DEFINE DRAWID_LOADOUT_SLOTS		DRAWID_LOADOUT_CONFIRM		+1
+#DEFINE DRAWID_LOADOUT_BASE_MENU	DRAWID_LOADOUT_SLOTS 		+LOADOUT_COUNT
+
+int 	loadout[LOADOUT_COUNT];
+int 	loadoutPage,
+		selectedLoadoutSlot = -1;
+bool 	isInteractionDisabled = false; // Ignore mouse events during menu animation
+
+script "MegaUI Loadout" (void) CLIENTSIDE {
+	InitLoadout();
+}
+
+function void InitLoadout(void) {
+	// Start the mouse menu / receive callback events in given script
+    if(!StartMouseMenu("MegaUI Loadout Callback"))
+        return;
+
+	SetPlayerProperty(0, true, PROP_TOTALLYFROZEN);
+	MGUIGames_DebugMessage(true);
+	LocalAmbientSound("MEGAUIG8", 127);
+	
+	// Slot menu background
+	Show(DRAWID_LOADOUT_BASE_MENU, "MEGAUIGU", 546/2, 364/2, 546, 364, 1.0);
+	
+	// Set up the 3 slots
+	for(int slot = 0; slot < LOADOUT_COUNT; slot++) {
+		SetLoadEquipped(slot, slot);
+		SetMouseArea(AREAID_SLOTS+slot, GetSlotX(slot), 81, 216, 162, 28, 28);
+	}
+	SetMouseArea(AREAID_CONFIRM, 115, 116, 230, 149, 68, 20);
+	UpdateLoadoutConfirm(false);
+}
+
+// Change one of the 3 slots' item and refresh its draw
+function void SetLoadEquipped(int slot, int itemId) {
+	loadout[slot] = itemId;
+	ShowText(DRAWID_LOADOUT_SLOTS+slot, StrParam(d:itemId), "bigfont", GetSlotX(slot), 81, 216, 162, 216, 1.0, 0);
+}
+
+function int GetSlotX(int slot) { 
+	return 73+34*slot;
+}
+
+// Draw confirm text
+function void UpdateLoadoutConfirm(bool isFocused) {
+	ShowText(DRAWID_LOADOUT_CONFIRM, "\c[n9]CONFIRM", (isFocused ? "BIGFONT" : "SMALLFONT"), 115, 117, 230, 149, 230, 1.0, 0);
+}
+
+
+// ------------------------------------------------------------------------------------------------------
+//        Mouse area events
+// ------------------------------------------------------------------------------------------------------
+
+function bool IsItemMenuOpen(void) { 
+	return selectedLoadoutSlot != -1; 
+}
+
+// Receive mouse events
+script "MegaUI Loadout Callback" (int e, int areaId) {
+	if(isInteractionDisabled)
+		terminate;
+	switch(e) {
+
+		// On hover area
+		case MGUI_EVENT_ENTER:
+
+			// Slot hover
+			if(areaId >= AREAID_SLOTS) {
+				if(IsItemMenuOpen())
+					terminate;
+				int index = areaId - AREAID_SLOTS;
+				Show(DRAWID_LOADOUT_RETICLE, "MEGAUIGW", 45+21*index, 50, 133, 100, 1.0);
+				LocalAmbientSound("MEGAUIGA", 127);
+			}
+
+			// Confirm button hover
+			else if(areaId == AREAID_CONFIRM) {
+				if(IsItemMenuOpen())
+					terminate;
+				UpdateLoadoutConfirm(true);
+				LocalAmbientSound("MEGAUIGA", 127);
+			}
+
+			// Item hover
+			else if(areaId >= AREAID_ITEMS) {
+				index = areaId - AREAID_ITEMS;
+				ShowText(DRAWID_LOADOUT_ITEM_NAME, StrParam(s:"Item #", d:index + (loadoutPage * LOADOUT_PAGE_SIZE)), "bigfont", 
+					210, 25, 420, 240, 420, 1.0, 0);
+				LocalAmbientSound("MEGAUIGA", 127);
+				Show(DRAWID_LOADOUT_RETICLE, "MEGAUIGW", 
+					GetLoadoutItemX(index % LOADOUT_COLUMNS), GetLoadoutItemY(index / LOADOUT_COLUMNS), 352, 264, 1.0);
+			}
+
+			// Page swap hover
+			else if(areaId == AREAID_SWAP_LEFT) {
+				LocalAmbientSound("MEGAUIGA", 127);
+				SetPageArrow(DRAWID_LOADOUT_SWAP_LEFT, 1);
+			}
+			else if(areaId == AREAID_SWAP_RIGHT) {
+				LocalAmbientSound("MEGAUIGA", 127);
+				SetPageArrow(DRAWID_LOADOUT_SWAP_RIGHT, 1);
+			}
+			break;
+
+		// On exit area
+		case MGUI_EVENT_EXIT:
+
+			// Slot exit
+			if(areaId >= AREAID_SLOTS) {
+				if(IsItemMenuOpen())
+					terminate;
+				Hide(DRAWID_LOADOUT_RETICLE);
+			}
+
+			// Confirm button exit
+			else if(areaId == AREAID_CONFIRM) {
+				if(IsItemMenuOpen())
+					terminate;
+				UpdateLoadoutConfirm(false);
+			}
+
+			// Item exit
+			else if(areaId >= AREAID_ITEMS) {
+				if(!IsItemMenuOpen())
+					terminate;
+				Hide(DRAWID_LOADOUT_ITEM_NAME);
+				Hide(DRAWID_LOADOUT_RETICLE);
+			}	
+
+			// Page swap exit
+			else if(areaId == AREAID_SWAP_LEFT) {
+				SetPageArrow(DRAWID_LOADOUT_SWAP_LEFT, 0);
+			}
+			else if(areaId == AREAID_SWAP_RIGHT) {
+				SetPageArrow(DRAWID_LOADOUT_SWAP_RIGHT, 0);
+			}
+			break;
+
+		// On fire press
+		case MGUI_EVENT_DOWN:
+            // If clicked into [no area], do nothing
+			if(areaId == MGUI_NULL_AREA)
+				terminate;
+
+			// Slot click
+			if(areaId >= AREAID_SLOTS) {
+				if(IsItemMenuOpen())
+					terminate;
+				LocalAmbientSound("MEGAUIG2", 127);
+				Hide(DRAWID_LOADOUT_RETICLE);
+
+				// Animation
+				isInteractionDisabled = true;
+				for(int i = 0; i <= LOADOUT_ANIMATION_T; i++) {
+					DrawItemMenuAnimation(FixedDiv(i<<16, LOADOUT_ANIMATION_T<<16));
+					delay(1);
+				}
+				isInteractionDisabled = false;
+
+				// Open first page
+				selectedLoadoutSlot = (areaId - AREAID_SLOTS);
+				SetLoadoutPage(0);
+	        	SetMouseArea(AREAID_SWAP_LEFT, 	128, 47, 360, 229, 24, 24);
+	        	SetMouseArea(AREAID_SWAP_RIGHT, 233, 47, 360, 229, 24, 24);
+				SetPageArrow(DRAWID_LOADOUT_SWAP_LEFT, 0);
+				SetPageArrow(DRAWID_LOADOUT_SWAP_RIGHT, 0);
+			}
+
+			// Confirm button click
+			else if(areaId == AREAID_CONFIRM) {
+				if(IsItemMenuOpen())
+					terminate;
+				LocalAmbientSound("MEGAUIG8", 127);
+				SetPlayerProperty(0, false, PROP_TOTALLYFROZEN);
+				for(i = 0; i < LOADOUT_COUNT; i++)
+					log(s:"Received abstract item #", d:loadout[i]);
+				Hide(DRAWID_LOADOUT_CONFIRM);
+				Hide(DRAWID_LOADOUT_BASE_MENU);
+				HideRange(DRAWID_LOADOUT_SLOTS, LOADOUT_COUNT);
+				MGUIGames_DebugMessage(false);
+				EndMouseMenu();
+			}
+
+			// Item click
+			else if(areaId >= AREAID_ITEMS) {
+				if(!IsItemMenuOpen())
+					terminate;
+				LocalAmbientSound("MEGAUIG9", 127);
+				index = areaId - AREAID_ITEMS;
+				SetLoadEquipped(selectedLoadoutSlot, index + (loadoutPage * LOADOUT_PAGE_SIZE));
+				Hide(DRAWID_LOADOUT_RETICLE);
+				Hide(DRAWID_LOADOUT_ITEM_NAME);
+				Hide(DRAWID_LOADOUT_PAGE);
+				SetPageArrow(DRAWID_LOADOUT_SWAP_LEFT, -1);
+				SetPageArrow(DRAWID_LOADOUT_SWAP_RIGHT, -1);
+				selectedLoadoutSlot = -1;
+				SetLoadoutPage(-1);
+					
+				// Animation
+				isInteractionDisabled = true;
+				for(i = LOADOUT_ANIMATION_T; i >= 0; i--) {
+					DrawItemMenuAnimation(FixedDiv(i<<16, LOADOUT_ANIMATION_T<<16));
+					delay(1);
+				}
+				isInteractionDisabled = false;
+				Hide(DRAWID_LOADOUT_ITEM_MENU);
+			}			
+
+			// Page swap click
+			else if (areaId == AREAID_SWAP_LEFT) {
+				LocalAmbientSound("MEGAUIGA", 127);
+				SetLoadoutPage((loadoutPage - 1 + LOADOUT_PAGE_MAX) % LOADOUT_PAGE_MAX);
+			}
+			else if (areaId == AREAID_SWAP_RIGHT) {
+				LocalAmbientSound("MEGAUIGA", 127);
+				SetLoadoutPage((loadoutPage + 1) % LOADOUT_PAGE_MAX);
+			}
+			break;
+
+		// On altfire press
+		case MGUI_EVENT_ALT_DOWN:
+			MGUI_SetDebug(true);
+			break;
+
+		// On altfire release
+		case MGUI_EVENT_ALT_UP:
+			MGUI_SetDebug(false);
+			break;
+	}
+}
+
+// The zoom in/out window popup animation upon selecting a slot
+function void DrawItemMenuAnimation(int progress) {
+	int hudWidth = 9115 - (FixedMul((9115-434)<<16, progress)>>16);
+	int hudHeight = 6836 - (FixedMul((6836-325)<<16, progress)>>16);
+	Show(DRAWID_LOADOUT_ITEM_MENU, "megauigx", hudWidth/2, hudHeight/2, hudWidth, hudHeight, 0.4+(FixedMul(progress, 0.6)));
+}
+
+// Set up items' mouse area / update page's menu
+function void SetLoadoutPage(int pageIndex) {
+	loadoutPage = pageIndex;
+	// Show menu
+	if(pageIndex != -1) {
+		ShowText(DRAWID_LOADOUT_PAGE, StrParam(d:pageIndex+1, s:"/", d:LOADOUT_PAGE_MAX), "bigfont", 180, 47, 360, 229, 360, 1.0, 0);
+		for(int row = 0; row < LOADOUT_ROWS; row++) {
+			for(int column = 0; column < LOADOUT_COLUMNS; column++) {
+				int itemIndex = (row*LOADOUT_COLUMNS) + column;
+				// Last item : remove number/mouse areas from remaining space
+				if((pageIndex * LOADOUT_PAGE_SIZE) + itemIndex == LOADOUT_MAX) {
+					int remaining = LOADOUT_PAGE_SIZE-itemIndex;
+					HideRange(DRAWID_LOADOUT_ITEM_ICONS+itemIndex, remaining);
+					DeleteMouseAreaRange(AREAID_ITEMS+itemIndex, remaining);
+					return;
+				}
+				SetMouseArea(AREAID_ITEMS+itemIndex, GetLoadoutItemX(column), GetLoadoutItemY(row), 352, 264, 20, 20);
+				ShowText(DRAWID_LOADOUT_ITEM_ICONS+itemIndex, StrParam(d:itemIndex+(pageIndex * LOADOUT_PAGE_SIZE)), "bigfont", 
+					166+36*column, 97+26*row, 582, 313, 582, 1.0, 0);
+			}
+		}
+	}
+	// Hide menu
+	else {
+		HideRange(DRAWID_LOADOUT_ITEM_ICONS, LOADOUT_PAGE_SIZE);
+		DeleteMouseAreaRange(AREAID_ITEMS, LOADOUT_PAGE_SIZE);
+		return;
+	}
+}
+
+function int GetLoadoutItemX(int column) {
+	return 100 + 22 * column;
+}
+
+function int GetLoadoutItemY(int row) {
+	return 82 + 22 * row;
+}
+
+// Update page arrow rendering
+function void SetPageArrow(int hudMessageId, int state) {
+	if(state == -1)
+		Hide(hudMessageId);
+	else {
+		if(hudMessageId == DRAWID_LOADOUT_SWAP_LEFT) {
+			str graphic = (state == 1) ? "MEGAUIGZ" : "MEGAUIGY";
+			int x = 128;
+		}
+		else {
+			graphic = (state == 1) ? "MEGAUIG]" : "MEGAUIG[";
+			x = 233;
+		}
+		Show(hudMessageId, graphic, x, 47, 360, 229, 1.0);
+	}
+}

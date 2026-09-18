@@ -1,0 +1,134 @@
+
+// -------------------------------------------------------------------------------------------
+//     Windows
+// -------------------------------------------------------------------------------------------
+
+/*  
+        [ Close all opened windows mini game ]
+
+    > For simplicity, only the top most window (lowest areaId) can be closed
+    > The cursor is custom ; changes upon hovering close button
+*/
+
+#DEFINE WINDOWS_MAX     16
+
+#DEFINE DRAWID_WINDOWS_TITLE    2000
+#DEFINE DRAWID_WINDOWS_START    DRAWID_WINDOWS_TITLE +1
+#DEFINE DRAWID_WINDOWS_END      DRAWID_WINDOWS_START + WINDOWS_MAX
+
+
+int windowCount = 0;
+
+script "MegaUI Windows" (void) CLIENTSIDE {
+
+	// Start the mouse menu / receive callback events in given script
+    if(!StartMouseMenu("MegaUI Windows Callback"))
+        terminate;
+
+	SetPlayerProperty(0, true, PROP_TOTALLYFROZEN);
+	MGUIGames_DebugMessage(true);
+    LocalAmbientSound("MEGAUIG5", 127);
+    SetWindowCursor(false);
+    delay(35);
+    for(int i = 0; i < 8; i++) { 
+        AddWindow(); 
+        delay(4); 
+    }
+    while(true) {
+        for(i = 0; i < 145; i++) {
+            delay(1);
+
+            // End game
+            if(windowCount == 0) {
+                Hide(DRAWID_WINDOWS_TITLE);
+                delay(10);
+                LocalAmbientSound("MEGAUIG5", 127);
+                MGUIGames_DebugMessage(false);
+                ShowText(DRAWID_WINDOWS_TITLE, "\cfV I C T O R Y", "bigfont", 160, 29, 320, 240, 320, 1.0, MGUI_TYPEON|0.04);
+                EndMouseMenu();
+                delay(50);
+                SetPlayerProperty(0, false, PROP_TOTALLYFROZEN);
+                Hide(DRAWID_WINDOWS_TITLE);
+                terminate;
+            }
+        }
+        AddWindow();
+    }
+}
+
+#DEFINE WINDOWS_HUD_WIDTH 877
+#DEFINE WINDOWS_HUD_HEIGHT 657
+// Push a new window
+function void AddWindow(void) {
+    if(windowCount >= WINDOWS_MAX)
+        return;
+    LocalAmbientSound("MEGAUIG4", 127);
+    windowCount++;
+
+    int hudMessageId = DRAWID_WINDOWS_END-windowCount,
+        x = random(280, 520),
+        y = random(230, 420);
+    // Window graphic ~ Id 2016 => 2015 => 2014...
+    Show(hudMessageId, "megauig5", x, y, WINDOWS_HUD_WIDTH, WINDOWS_HUD_HEIGHT, 1.0); 
+    // Close button ~ Id 15 => 14 => 13...
+    SetMouseArea((WINDOWS_MAX-windowCount), x+219, y-152, WINDOWS_HUD_WIDTH, WINDOWS_HUD_HEIGHT, 36, 36); 
+    RefreshWindowTitle();
+}
+
+function void RefreshWindowTitle(void) {
+	ShowText(DRAWID_WINDOWS_TITLE, StrParam(s:"\cdWindows left ", d:windowCount, s:" / ", d:WINDOWS_MAX), "bigfont", 160, 10, 320, 240, 320, 1.0, 0);
+}
+
+script "MegaUI Windows Callback" (int e, int areaId) {
+	switch(e) {
+
+        // On hovering topmost window mouse area- turn mouse cursor into a finger
+        case MGUI_EVENT_ENTER:
+			if(IsTopMostWindow(areaId))
+				SetWindowCursor(true);
+            break;
+
+        // On exit mouse area area - revert mouse cursor to a pointer
+        case MGUI_EVENT_EXIT:
+            SetWindowCursor(false);
+            break;
+
+        // On fire press
+		case MGUI_EVENT_DOWN:
+
+            // If that's the top most one, close it
+            if(IsTopMostWindow(areaId)) {
+                DeleteMouseArea(areaId);
+                Hide(DRAWID_WINDOWS_END-windowCount);
+                windowCount--;
+                RefreshWindowTitle();
+                LocalAmbientSound("MEGAUIG6", 127);
+                SetWindowCursor(false);
+            }
+			break;
+
+		// On altfire press
+		case MGUI_EVENT_ALT_DOWN:
+			MGUI_SetDebug(true);
+			break;
+
+		// On altfire release
+		case MGUI_EVENT_ALT_UP:
+			MGUI_SetDebug(false);
+			break;
+	}
+}
+
+function void SetWindowCursor(bool isHover) {
+    // Finger position is displayed under the mouse position
+    if(isHover)
+        SetCustomMouse("MEGAUIGK", 0, 11, 640, 480);
+    // Pointer position is displayed at bottom right hand corner of mouse position
+    else
+        SetCustomMouse("MEGAUIGL", 5, 10, 640, 480);
+}
+
+function bool IsTopMostWindow(int index) {
+	return (index == (WINDOWS_MAX-windowCount));
+}
+

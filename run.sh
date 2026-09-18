@@ -11,4 +11,5 @@ $pathZandronum \
 +sv_cheats 1
 
 # -iwad "G:/games/megaman/8bdm/2023/megagame.wad" \
-# -iwad "G:/games/megaman/8bdm/2023/MM8BDM-v6b.pk3" \
+# -file "G:/games/megaman/8bdm/2023/MM8BDM-v6b.pk3" \
+

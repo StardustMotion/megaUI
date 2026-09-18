@@ -303,7 +303,7 @@ function void MGUIEditor_CheckInput(void) {
                         if(s | mguiEditorMouseIsUniformScale)         
                             mguiEditorMouseYFactor = FixedDiv(mguiEditorMouseYFactor, mouseY);
                     }
-                    mouseX = 0.015, mouseY = 10.0;
+                    mouseX = 0.005, mouseY = 30.0;
                     mguiEditorMouseXFactor = MGUI_Clamp(mguiEditorMouseXFactor, mouseX, mouseY);
                     mguiEditorMouseYFactor = MGUI_Clamp(mguiEditorMouseYFactor, mouseX, mouseY);
                     break;

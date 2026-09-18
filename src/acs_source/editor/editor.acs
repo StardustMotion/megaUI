@@ -36,7 +36,7 @@ int     mguiEditorMouseType,
 
 script "MegaUI Editor" (void) CLIENTSIDE {
     if(!StartMouseMenu("MegaUI Editor Event")) {
-        MGUIEditor_Log("MegaUI Editor is already running.");
+        MGUIEditor_Log("MegaUI Editor (or a another mod's mouse menu) is already running.");
         MGUIEditor_Play(MGUI_SFX_ERROR);
         terminate;
     }
@@ -49,7 +49,7 @@ script "MegaUI Editor" (void) CLIENTSIDE {
     int x, y, hudWidth, hudHeight;
 
     for(x = 0; x <= 27; x++) {
-        Show(MGUI_EDITOR_BACKGROUND_DRAWID, "MEGAUI_6", 55, 55, 110, 110, FixedMul(FixedDiv(x<<16, 27.0), 0.8));
+        Show(MGUI_EDITOR_BACKGROUND_DRAWID, "MEGAUI_6", MGUI_HUD_WIDTH>>1, MGUI_HUD_HEIGHT>>1, MGUI_HUD_WIDTH, MGUI_HUD_HEIGHT, FixedMul(FixedDiv(x<<16, 27.0), 0.8));
         delay(1);
     }
     Log(l:"MGUI_EDITOR_OPEN");
@@ -57,8 +57,7 @@ script "MegaUI Editor" (void) CLIENTSIDE {
     if(FixedDiv(GetScreenHeight()<<16, GetScreenWidth()<<16) != 0.75) {
         MGUIEditor_Play(MGUI_SFX_ERROR);
         MGUIEditor_Log(StrParam(s:"\n\c[c5][ WARNING ] \c[r5]Your game resolution (\c[j5]", d:GetScreenWidth(), s:"x", d:GetScreenHeight(), 
-            s:"\c[r5]) ratio is not 4:3 (800x600, 1024x768, etc).\n\c[r5]Please design your UI on 4:3 resolution to avoid ",
-            s:"some out of screen issues for 4:3 players"));
+            s:"\c[r5]) ratio is not 4:3 (800x600, 1024x768, etc).\n\c[r5]Just keep in mind elements drawn outside of the dark area won't be visible to players with 4:3 resolution."));
     }
 
     // Main thread
@@ -102,7 +101,9 @@ script "MegaUI Editor" (void) CLIENTSIDE {
                     stringBuilder = "MGUI_EDITOR_WRAP"; 
                     break;
             }
+            SetAnchor(MGUI_LEFT);
             DrawText(StrParam(l:stringBuilder), "smallfont", 77, 210, 674, 314, 148, 0.8, 0);
+            ClearAnchor();
         }
 
         // Stamp modes
@@ -133,7 +134,9 @@ script "MegaUI Editor" (void) CLIENTSIDE {
                 stringBuilder = StrParam(s:stringBuilder, s:"\c[f2]Size \cj", d:mguiEditorMouseSizeX, s:"x", d:mguiEditorMouseSizeY);
                     
             // Draw Inspector
+            SetAnchor(MGUI_RIGHT);
             DrawText(stringBuilder, "smallfont", 444, (mguiInspectorPosition == MGUI_INSPECTOR_BOTTOM ? 196 : 28), 502, 223, 502, 0.75, 0);
+            ClearAnchor();
 
             // Draw the stamp on mouse
             switch(mguiEditorMouseType) {
@@ -215,7 +218,7 @@ function void MGUIEditor_SetMode(int mode, bool isSilent) {
             case MGUI_EDITOR_STAMP_GRAPHIC:     stringBuilder = "graphic"; break;
             case MGUI_EDITOR_STAMP_MOUSE_AREA:  stringBuilder = "mouse area"; break;
         }
-        stringBuilder = StrParam(s:"Brush [", s:"\c[72]", s:stringBuilder, s:"\c[p7]", s:"]");
+        stringBuilder = StrParam(s:"Brush [", s:"\c[72]", s:stringBuilder, s:"\c[z2]", s:"]");
     }
     MGUIEditor_ShowBanner(stringBuilder);
 }
@@ -233,13 +236,15 @@ function void MGUIEditor_SetDefaultMouseBrush(void) {
 
 function void MGUIEditor_ShowBanner(str text) {
     mguiBannerTimer = 18+((StrLen(text)*5)/4);
-    mguiBannerText = StrParam(s:"\c[p7]", s:text);
+    mguiBannerText = StrParam(s:"\c[z2]", s:text);
 }
 
 function void MGUIEditor_SetInspectorPosition(int state) {
+    SetAnchor(MGUI_RIGHT);
     if(state==MGUI_INSPECTOR_BOTTOM)
-        SetMouseArea(MGUI_EDITOR_INSPECTOR_DRAWID, 443, 196, 116, 56, 502, 223);
+        SetMouseArea(MGUI_EDITOR_INSPECTOR_DRAWID, 443, 196, 502, 223, 116, 56);
     else if(state==MGUI_INSPECTOR_TOP)
-        SetMouseArea(MGUI_EDITOR_INSPECTOR_DRAWID, 443, 28, 116, 56, 502, 223);
+        SetMouseArea(MGUI_EDITOR_INSPECTOR_DRAWID, 443, 28,  502, 223, 116, 56);
+    ClearAnchor();
     mguiInspectorPosition = state;
 }

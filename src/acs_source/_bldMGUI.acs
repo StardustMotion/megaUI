@@ -1,0 +1,34 @@
+#library "_bldMGUI"
+
+// ------------------- //
+//       Libs          //
+// ------------------- //
+#include "zcommon.acs"
+#include "megaUI.acs"
+
+// --------------------- //
+//       Editor          //
+// --------------------- //
+#include "editor/common.acs"
+#include "editor/stamps.acs"
+#include "editor/editor.acs"
+#include "editor/events.acs"
+#include "editor/generator.acs"
+
+
+// -------------------- //
+//     Minigames        //
+// -------------------- //
+#DEFINE DRAWID_MEGAUIGAMES_DEBUG 1200
+function void MGUIGames_DebugMessage(bool state) {
+    if(state)
+	    ShowText(DRAWID_MEGAUIGAMES_DEBUG, "\cvHold altfire to enable debug and see mouse areas.", "smallfont", 
+            320, 440, 640, 480, 640, 1.0, 0);
+    else
+        Hide(DRAWID_MEGAUIGAMES_DEBUG);
+}
+
+#include "minigames/1_windows.acs"
+#include "minigames/2_augments.acs"
+#include "minigames/3_ddr.acs"
+#include "minigames/4_loadout.acs"
