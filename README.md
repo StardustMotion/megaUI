@@ -1,5 +1,6 @@
-# MegaUI
-*An ACS library / tool for designing and implementing UIs in Zandronum*
+## Documentation
+
+### [Link](docs/DOCUMENTATION.md)
 
 ## Development
 
