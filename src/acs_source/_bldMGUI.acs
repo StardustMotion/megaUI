@@ -32,3 +32,4 @@ function void MGUIGames_DebugMessage(bool state) {
 #include "minigames/2_augments.acs"
 #include "minigames/3_ddr.acs"
 #include "minigames/4_loadout.acs"
+
