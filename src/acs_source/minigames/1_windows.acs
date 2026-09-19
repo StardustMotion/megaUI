@@ -46,6 +46,7 @@ script "MegaUI Windows" (void) CLIENTSIDE {
                 MGUIGames_DebugMessage(false);
                 ShowText(DRAWID_WINDOWS_TITLE, "\cfV I C T O R Y", "bigfont", 160, 29, 320, 240, 320, 1.0, MGUI_TYPEON|0.04);
                 EndMouseMenu();
+                SetCustomMouse("DOOMCURS", 7, 14, 320, 240);
                 delay(50);
                 SetPlayerProperty(0, false, PROP_TOTALLYFROZEN);
                 Hide(DRAWID_WINDOWS_TITLE);

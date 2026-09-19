@@ -107,6 +107,7 @@ function void SetAugmentHighlight(int areaId, bool state) {
 		SetAugmentAnchor(areaId);
 		// Lighten the selected augment by stamping a 30% opaque white graphic over it
         Show(hudMessageId, "megauig4", GetAugmentPositionX(areaId), 120, 320, 240, 0.3);
+		ClearAnchor();
 	}
 	else
 		Hide(hudMessageId);

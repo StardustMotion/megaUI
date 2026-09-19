@@ -1,3 +1,6 @@
+- [Zandronum thread]()
+- [MM8BDM thread](https://mm8bdm.net/forum/thread/megaui-a-zandronum-ui-library-319)
+
 ## MegaUI documentation
 
 - [Intro](#intro)
@@ -13,7 +16,10 @@
 
 A library made in ACS aiming for faster UI implementation, and ability to make mouse-interactable menus, in Zandronum.
 
-### [\>\>\> Download \<\<\<](https://github.com/USER/REPO/releases/latest)
+### [\>\>\> Download v1.0.0\<\<\<](https://allfearthesentinel.com/zandronum/download.php?file=megaui-1.0.0.pk3) [*2026-09-19*]
+
+[![ToVideo](./res/embeddedVideosWhen.png)](https://www.youtube.com/watch?v=gnVInIYzU8s)
+
 
 ### Quick showcase
 
@@ -26,10 +32,10 @@ Load it with Zandronum offline, start a map, then :
 - **Zandronum >= 3.3 required**. Also make sure your compiler uses the latest [zdefs.acs / zspecial.acs](https://foss.heptapod.net/zandronum/acc)
 - Copy [megaUI.acs](../src/acs_source/megaUI.acs) to your mod ; include it with `#include "megaUI.acs"`, and you're done
 - After the below feature overview, you can check `megaUI.acs`'s functions (until `API ~ END`), and the 4 `megagameX` minigames' code as examples.
+- *Screenshots below are from Mega Man 8-bit Deathmatch, but this can be used in other Zandronum games as well*
 
 # Features
 
-*Screenshots below are from Mega Man 8-bit Deathmatch, but this can be used in other Zandronum games as well*
 
 ## Simplified rendering
 
@@ -147,12 +153,15 @@ You can:
 ### Example 
 ![Editor](./res/editor0.png)
 
-### Generated code (use `logfile` for writing to disk)
+### Generated code
+(Use `logfile` Zandronum command to write to disk. *You can use a tool like [this website](https://cleantextkit.com/remove-timestamps/) to trim the logs' timestamps.*)
+
 ![Editor](./res/editor1.png)
 
 
 # Credits
 - Zandronum devs for the engine
+- Beta testers : PinkRoboBlaster, Heelnavi
 - Editor 
     - SFX from Dreamcast BIOS
     - Cursor from Kenney's cursor pixel pack

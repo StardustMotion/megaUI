@@ -11,5 +11,8 @@ $pathZandronum \
 -file "./acc/dist/megaUI-1.0.0.pk3" \
 +sv_cheats 1
 
+
+
+
 # -iwad "G:/games/megaman/8bdm/2023/doom2.wad" \
 

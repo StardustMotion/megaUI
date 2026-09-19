@@ -20,7 +20,7 @@
 /*
 - To use MegaUI, copy this megaUI.acs file to your mod and use #include "megaUI.acs"
     - Optionally, copy MegaUI's graphics/debug content to your mod : it is needed to use debug mode MGUI_SetDebug() below
-- All functions are meant for CLIENTSIDE scripting (NamedExecuteClientScript, etc)
+- All functions are expected to be run in CLIENTSIDE context (NamedExecuteClientScript, etc)
 - Use NON-fixed ints for x/y position (160, 120 ; instead of 160.0, 120.0)
 - hudWidth and hudHeight represent SetHudSize's "scaling" width/height parameters (i.e 320, 240)
 */
@@ -61,7 +61,7 @@ function void Hide(int hudMessageId) {
     HudMessageBold(s:""; HUDMSG_PLAIN, hudMessageId, 0, 0, 0, 0, 0); 
 }
 
-// Shorthand for <count> consecutive Erase() calls, starting from <hudMessageId>
+// Shorthand for <count> consecutive Hide() calls, starting from <hudMessageId>
 function void HideRange(int hudMessageId, int count) {
     for(int i = 0; i < count; i++) 
         Hide(hudMessageId+i);
@@ -141,7 +141,7 @@ function void   SetCustomMouse(str graphic, int offsetX, int offsetY, int hudWid
     ACS_NamedExecuteWithResult("MegaUI API", 3, graphic, ((offsetY+0x7FFF)<<16)|(offsetX+0x7FFF), (hudHeight<<16)|hudWidth); }
 
 /* Mouse's position :
-    - For a 4:3 screen resolution, value Value is [0.0, 1.0] 
+    - For a 4:3 screen resolution, value is [0.0, 1.0] 
     - Wider screens can go over, i.e [-0.3, 1.3] 
 */
 function int    GetMouseX(void) {                   return ACS_NamedExecuteWithResult("MegaUI API", 4); }
