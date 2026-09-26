@@ -44,7 +44,7 @@ script "MegaUI Windows" (void) CLIENTSIDE {
                 delay(10);
                 LocalAmbientSound("MEGAUIG5", 127);
                 MGUIGames_DebugMessage(false);
-                ShowText(DRAWID_WINDOWS_TITLE, "\cfV I C T O R Y", "bigfont", 160, 29, 320, 240, 320, 1.0, MGUI_TYPEON|0.04);
+                ShowText(DRAWID_WINDOWS_TITLE, "\cfV I C T O R Y", "bigfont", 160, 29, 320, 240, 0, 1.0, MGUI_TYPEON|0.04);
                 EndMouseMenu();
                 SetCustomMouse("DOOMCURS", 7, 14, 320, 240);
                 delay(50);
@@ -77,7 +77,7 @@ function void AddWindow(void) {
 }
 
 function void RefreshWindowTitle(void) {
-	ShowText(DRAWID_WINDOWS_TITLE, StrParam(s:"\cdWindows left ", d:windowCount, s:" / ", d:WINDOWS_MAX), "bigfont", 160, 10, 320, 240, 320, 1.0, 0);
+	ShowText(DRAWID_WINDOWS_TITLE, StrParam(s:"\cdWindows left ", d:windowCount, s:" / ", d:WINDOWS_MAX), "bigfont", 160, 10, 320, 240, 0, 1.0, 0);
 }
 
 script "MegaUI Windows Callback" (int e, int areaId) {

@@ -258,7 +258,7 @@ function void UpdateDDRMenu(int areaId, int isFocused) {
     if((areaId==AREAID_MENU_STOP) && (ddrTrack==-1)) // Stop
         Hide(DRAWID_DDR_MENU+index);
     else
-        ShowText(DRAWID_DDR_MENU+index, text, (isFocused ? "BIGFONT" : "SMALLFONT"), 244, GetDDRMenuY(areaId), 320, 170, 320, 1.0, 0);
+        ShowText(DRAWID_DDR_MENU+index, text, (isFocused ? "BIGFONT" : "SMALLFONT"), 244, GetDDRMenuY(areaId), 320, 170, 0, 1.0, 0);
 }
 
 function void SetDDRTrack(int track) {
@@ -444,7 +444,7 @@ function void ShiftDDRBeat(int accuracy) {
     Show(DRAWID_DDR_JUDGMENT, ddrJudgment, 178, 259, 619, 464, 1.0);
     ddrJudgmentDuration = DDR_JUDGMENT_BASE_DURATION;
     if(ddrCombo > 2)
-        ShowText(DRAWID_DDR_COMBO, StrParam(d:ddrCombo, s:" combo"), "bigfont", 117, 199, 412, 309, 412, 1.0, 0);
+        ShowText(DRAWID_DDR_COMBO, StrParam(d:ddrCombo, s:" combo"), "bigfont", 117, 199, 412, 309, 0, 1.0, 0);
     else
         Hide(DRAWID_DDR_COMBO);
 }

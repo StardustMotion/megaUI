@@ -13,7 +13,7 @@
 
 A library made in ACS aiming for faster UI implementation, and ability to make mouse-interactable menus, in Zandronum.
 
-### [\>\>\> Download v1.0.0\<\<\<](https://allfearthesentinel.com/zandronum/download.php?file=megaui-1.0.0.pk3) [*2026-09-19*]
+### [\>\>\> Download v1.1.0\<\<\<](https://allfearthesentinel.com/zandronum/download.php?file=megaui-1.1.0.pk3) [*2026-09-26*]
 
 [![ToVideo](./res/embeddedVideosWhen.png)](https://www.youtube.com/watch?v=gnVInIYzU8s)
 

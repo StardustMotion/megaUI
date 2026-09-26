@@ -69,7 +69,7 @@ function void InitLoadout(void) {
 // Change one of the 3 slots' item and refresh its draw
 function void SetLoadEquipped(int slot, int itemId) {
 	loadout[slot] = itemId;
-	ShowText(DRAWID_LOADOUT_SLOTS+slot, StrParam(d:itemId), "bigfont", GetSlotX(slot), 81, 216, 162, 216, 1.0, 0);
+	ShowText(DRAWID_LOADOUT_SLOTS+slot, StrParam(d:itemId), "bigfont", GetSlotX(slot), 81, 216, 162, 0, 1.0, 0);
 }
 
 function int GetSlotX(int slot) { 
@@ -78,7 +78,7 @@ function int GetSlotX(int slot) {
 
 // Draw confirm text
 function void UpdateLoadoutConfirm(bool isFocused) {
-	ShowText(DRAWID_LOADOUT_CONFIRM, "\c[n9]CONFIRM", (isFocused ? "BIGFONT" : "SMALLFONT"), 115, 117, 230, 149, 230, 1.0, 0);
+	ShowText(DRAWID_LOADOUT_CONFIRM, "\c[n9]CONFIRM", (isFocused ? "BIGFONT" : "SMALLFONT"), 115, 117, 230, 149, 0, 1.0, 0);
 }
 
 
@@ -120,7 +120,7 @@ script "MegaUI Loadout Callback" (int e, int areaId) {
 			else if(areaId >= AREAID_ITEMS) {
 				index = areaId - AREAID_ITEMS;
 				ShowText(DRAWID_LOADOUT_ITEM_NAME, StrParam(s:"Item #", d:index + (loadoutPage * LOADOUT_PAGE_SIZE)), "bigfont", 
-					210, 25, 420, 240, 420, 1.0, 0);
+					210, 25, 420, 240, 0, 1.0, 0);
 				LocalAmbientSound("MEGAUIGA", 127);
 				Show(DRAWID_LOADOUT_RETICLE, "MEGAUIGW", 
 					GetLoadoutItemX(index % LOADOUT_COLUMNS), GetLoadoutItemY(index / LOADOUT_COLUMNS), 352, 264, 1.0);
@@ -230,6 +230,8 @@ script "MegaUI Loadout Callback" (int e, int areaId) {
 				SetPageArrow(DRAWID_LOADOUT_SWAP_RIGHT, -1);
 				selectedLoadoutSlot = -1;
 				SetLoadoutPage(-1);
+				DeleteMouseArea(AREAID_SWAP_LEFT);
+				DeleteMouseArea(AREAID_SWAP_RIGHT);
 					
 				// Animation
 				isInteractionDisabled = true;
@@ -276,7 +278,7 @@ function void SetLoadoutPage(int pageIndex) {
 	loadoutPage = pageIndex;
 	// Show menu
 	if(pageIndex != -1) {
-		ShowText(DRAWID_LOADOUT_PAGE, StrParam(d:pageIndex+1, s:"/", d:LOADOUT_PAGE_MAX), "bigfont", 180, 47, 360, 229, 360, 1.0, 0);
+		ShowText(DRAWID_LOADOUT_PAGE, StrParam(d:pageIndex+1, s:"/", d:LOADOUT_PAGE_MAX), "bigfont", 180, 47, 360, 229, 0, 1.0, 0);
 		for(int row = 0; row < LOADOUT_ROWS; row++) {
 			for(int column = 0; column < LOADOUT_COLUMNS; column++) {
 				int itemIndex = (row*LOADOUT_COLUMNS) + column;
@@ -289,7 +291,7 @@ function void SetLoadoutPage(int pageIndex) {
 				}
 				SetMouseArea(AREAID_ITEMS+itemIndex, GetLoadoutItemX(column), GetLoadoutItemY(row), 352, 264, 20, 20);
 				ShowText(DRAWID_LOADOUT_ITEM_ICONS+itemIndex, StrParam(d:itemIndex+(pageIndex * LOADOUT_PAGE_SIZE)), "bigfont", 
-					166+36*column, 97+26*row, 582, 313, 582, 1.0, 0);
+					166+36*column, 97+26*row, 582, 313, 0, 1.0, 0);
 			}
 		}
 	}

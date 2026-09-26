@@ -23,7 +23,7 @@
 function void MGUIGames_DebugMessage(bool state) {
     if(state)
 	    ShowText(DRAWID_MEGAUIGAMES_DEBUG, "\cvHold altfire to enable debug and see mouse areas.", "smallfont", 
-            320, 440, 640, 480, 640, 1.0, 0);
+            320, 440, 640, 480, 0, 1.0, 0);
     else
         Hide(DRAWID_MEGAUIGAMES_DEBUG);
 }
