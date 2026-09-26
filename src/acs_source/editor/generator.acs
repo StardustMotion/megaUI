@@ -12,7 +12,7 @@ script "MegaUI Build" (void) CLIENTSIDE {
         terminate;
     }
     int mouseAreaId = 0,
-        hudMessageId = 0;
+        hudMessageId = MGUI_EDITOR_STAMP_MAX-1;
         
     str stringBuilder = "\n
         //===================================//\n
@@ -23,7 +23,7 @@ script "MegaUI Build" (void) CLIENTSIDE {
     //     Data parsing         //
     //////////////////////////////
 
-    for(int slot = mguiEditorStampCount-1; slot >= 0; slot--) {
+    for(int slot = 0; slot < mguiEditorStampCount; slot++) {
 
         int hudWidth = MGUIEditor_ToHud(mguiEditorStampXFactor[slot], MGUI_HUD_WIDTH),
             hudHeight = MGUIEditor_ToHud(mguiEditorStampYFactor[slot], MGUI_HUD_HEIGHT),
@@ -35,6 +35,9 @@ script "MegaUI Build" (void) CLIENTSIDE {
 
             // Text stamp
             case MGUI_EDITOR_STAMP_TEXT:
+                int wrap = MGUIEditor_ToHud(mguiEditorStampWrap[slot], hudWidth);
+                if(wrap == hudWidth)
+                    wrap = 0;
                 stringBuilder = StrParam(s:stringBuilder, s:"\nShowText(",
                     s:"50000+", d:hudMessageId, 
                     s:", \"",   s:mguiEditorStampContent[slot], 
@@ -43,11 +46,11 @@ script "MegaUI Build" (void) CLIENTSIDE {
                     s:", ",     d:y,
                     s:", ",     d:hudWidth,
                     s:", ",     d:hudHeight,
-                    s:", ",     d:MGUIEditor_ToHud(mguiEditorStampWrap[slot], hudWidth),
+                    s:", ",     d:wrap,
                     s:", ",     s:alpha,
                     s:", MGUI_CENTER);"
                 );
-                hudMessageId++;
+                hudMessageId--;
                 break;
 
             // Graphic stamp
@@ -62,7 +65,7 @@ script "MegaUI Build" (void) CLIENTSIDE {
                     s:", ",     s:alpha,
                     s:");"
                 );
-                hudMessageId++;
+                hudMessageId--;
                 break;
 
             // Mouse area stamp

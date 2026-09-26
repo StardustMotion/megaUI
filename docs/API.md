@@ -43,15 +43,15 @@ Same as `Show()`, but is drawn for 1 tic only. Does not need hudMessageId ; it a
 ### `void ShowText(int hudMessageId, str text, str font, int x, int y, int hudWidth, int hudHeight, int wrap, int alpha, int flags)`
 Like `Show()` but for text. Particular parameters :
 
-- `wrap` - value must be between `[1, hudWidth]` ; defines available space for each text line until it wraps to next line.
+- `wrap` same as `SetHudClipRect`'s `wrapwidth` 
 - `flags` additive flags :
     - `MGUI_CENTER` to center text (internally SetHudSize's `x |= 0.4`)
     - `MGUI_TYPEON` for delayed text typing (internally `HUDMSG_TYPEON`). Specify delay duration as `(MGUI_TYPEON|duration)`
 
 **Examples**
 ```
-ShowText(1002, "Bottom text", "SMALLFONT", 160, 200, 320, 240, 320, 1.0, 0);                // Basic text draw
-ShowText(1002, "Loading...", "BIGFONT", 160, 120, 320, 240, 320, 1.0, MGUI_TYPEON|0.08);    // 0.08s per character typing "Loading..." in middle of the screen
+ShowText(1002, "Bottom text", "SMALLFONT", 160, 200, 320, 240, 0, 1.0, 0);                // Basic text draw
+ShowText(1002, "Loading...", "BIGFONT", 160, 120, 320, 240, 0, 1.0, MGUI_TYPEON|0.08);    // 0.08s per character typing "Loading..." in middle of the screen
 ShowText(1003, "A big block of text that will be forced to take several lines due to small wrapping ; and it's centered ; and it uses delayed typing", 
     "BIGFONT", 160, 120, 320, 240, 80, 1.0, MGUI_CENTER|MGUI_TYPEON|0.02);
 ```
@@ -105,7 +105,7 @@ Uncrop();                                                   // Disable it
 
 ---
 ### `void SetAnchor(int anchorValue)`
-Keeps subsequent `Draw()`/`Show()` calls at a fixed offset from the screen edge, even if player has a wider game resolution than 4:3.
+Keeps subsequent `Draw()`, `Show()` and `SetMouseArea()` calls at a fixed offset from the screen edge, even if player has a wider game resolution than 4:3.
 - `anchorValue = MGUI_LEFT` : offset from left edge
 - `anchorValue = MGUI_RIGHT` : offset from right edge
 
@@ -162,6 +162,10 @@ Registers an area that sends mouse events.
 - `width`/`height` is the area's dimensions, as if it was a graphic file.
 - `areaId` must be >= 0
 - When the mouse is within several areas, only the one with lowest `areaId` will trigger events (similar to hudMessage id priority) 
+
+--- 
+### `int GetMouseArea(void)`
+Returns the currently hovered mouse areaId, or `MGUI_NULL_AREA` if none
 
 --- 
 ### `void DeleteMouseArea(int areaId)`

@@ -38,7 +38,7 @@ script "MegaUI Augments" (void) CLIENTSIDE {
 	MGUIGames_DebugMessage(true);
 
 	// Title - write with 0.12s delay between each character (HUDMSG_TYPEON)
-	ShowText(DRAWID_AUGMENT_TITLE, "\cdCOLLECT YOURE TREASURE!!", "bigfont", 160, 29, 320, 240, 320, 1.0, MGUI_TYPEON|0.12);
+	ShowText(DRAWID_AUGMENT_TITLE, "\cdCOLLECT YOURE TREASURE!!", "bigfont", 160, 29, 320, 240, 0, 1.0, MGUI_TYPEON|0.12);
 	
 	// Draw augments
     for(int i = 0; i < AUGMENTS_COUNT; i++) {

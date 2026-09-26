@@ -135,7 +135,7 @@ script "MegaUI Editor" (void) CLIENTSIDE {
                     
             // Draw Inspector
             SetAnchor(MGUI_RIGHT);
-            DrawText(stringBuilder, "smallfont", 444, (mguiInspectorPosition == MGUI_INSPECTOR_BOTTOM ? 196 : 28), 502, 223, 502, 0.75, 0);
+            DrawText(stringBuilder, "smallfont", 444, (mguiInspectorPosition == MGUI_INSPECTOR_BOTTOM ? 196 : 28), 502, 223, 0, 0.75, 0);
             ClearAnchor();
 
             // Draw the stamp on mouse
