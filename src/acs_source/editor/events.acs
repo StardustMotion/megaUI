@@ -110,6 +110,8 @@ script "MegaUI Editor Chat" (int type, int message, int arg2) EVENT {
         terminate;
     if (type == GAMEEVENT_CHAT) {
         message = GetChatMessage(message, 0);
+        if(GetChar(message, 0) == '$')
+            message = StrParam(l:StrRight(message, StrLen(message)-1));
         switch(mguiEditor_ChatMode) {
             // Text message as brush
             case MGUI_EDITOR_CHAT_MODE_IDLE:
