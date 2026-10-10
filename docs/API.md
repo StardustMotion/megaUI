@@ -63,6 +63,26 @@ Like `Draw()` but for text.
 
 --- 
 
+### `void SetTextColor(str code)`
+Change the default text color of subsequent `DrawText()`/`ShowText()` calls, by automatically applying a `\c[code]` TEXTCOLO prefix to them.
+
+**Example**
+```
+// This
+SetTextColor("g");
+ShowText(1000, "Red text A"
+ShowText(1001, "Red text B"
+SetTextColor("N3");
+ShowText(1002, "Neon Orange text A"
+
+// Has the same effect as this
+ShowText(1000, "\cgRed text A"
+ShowText(1001, "\cgRed text B"
+ShowText(1002, "\c[N3]Neon Orange text A"
+```
+
+
+--- 
 ### `void Hide(int hudMessageId)`
 Removes a previously `Show()`/`ShowText()` rendered element.
 

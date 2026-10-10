@@ -9,7 +9,7 @@
                 //   ╚═╝     ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝     ╚═════╝ ╚═╝   //
                 //                                                          //
                 //////////////////////////////////////////////////////////////
-                //                   Version 1.1.0                          //
+                //                   Version 2.0.0                          //
                 //////////////////////////////////////////////////////////////
 
 
@@ -54,6 +54,11 @@ function void ShowText(int hudMessageId, str text, str font, int x, int y, int h
 // Draws text on screen for 1 tic only
 function void DrawText(str text, str font, int x, int y, int hudWidth, int hudHeight, int wrap, int alpha, int flags) { 
     ShowText(0, text, font, x, y, hudWidth, hudHeight, wrap, alpha, flags);
+}
+
+// Color the subsequent DrawText()/ShowText() calls by automatically applying a \c[code] TEXTCOLO prefix to them
+function void SetTextColor(str code) {
+    MGUI_SetTextColorCore(code);
 }
 
 // Erase a Show() or ShowText() rendered element from screen
@@ -189,7 +194,8 @@ int                         mguiIsDebug = false,
                             mguiAnchor = MGUI_ANCHOR_NONE,
                             mguiPlayerWidthCache = -1,
                             mguiPlayerHeightCache = -1,
-                            mgui4to3Ratio = 1.0;
+                            mgui4to3Ratio = 1.0,
+                            mguiTextColor = "\c-";
 
 function void   MGUI_Log(str message) {             if(mguiIsDebug) log(s:"\c[v7][\c[x5] MegaUI \c[v7]] \c-",s:message); }
 function int    MGUI_Min(int x, int y) {            return (x>y ? y : x); }
@@ -226,12 +232,13 @@ function void MGUI_DrawCore(int hudMessageId, str value, str font, int x, int y,
 	SetHudSize(hudWidth, hudHeight, true);
 	SetFont(font);
     x = MGUI_GetAnchoredX(x, hudWidth, mguiAnchor);
+    value = StrParam(s:mguiTextColor, s:value);
     if(flags & MGUI_TYPEON) {
-        HudMessageBold(s:value; HUDMSG_PLAIN|HUDMSG_ALPHA|HUDMSG_TYPEON, hudMessageId, CR_UNTRANSLATED,
+        HudMessageBold(s:value; HUDMSG_PLAIN|HUDMSG_ALPHA|HUDMSG_TYPEON|HUDMSG_COLORSTRING, hudMessageId, CR_UNTRANSLATED,
             (x << 16) | (flags & MGUI_CENTER ? 0.4 : 0), y<<16, 0x8000000, (flags & 0x0FFFFFFF), 0x80000000, alpha);
     }
     else {
-        HudMessageBold(s:value; HUDMSG_PLAIN|HUDMSG_ALPHA, hudMessageId, CR_UNTRANSLATED,
+        HudMessageBold(s:value; HUDMSG_PLAIN|HUDMSG_ALPHA|HUDMSG_COLORSTRING, hudMessageId, CR_UNTRANSLATED,
             (x << 16) | (flags & MGUI_CENTER ? 0.4 : 0), y<<16, (hudMessageId ? 0x8000000 : 1873), alpha);
     }
 }
@@ -242,6 +249,10 @@ function void MGUI_DrawTextCore(int hudMessageId, str text, str font, int x, int
     MGUI_DrawCore(hudMessageId, text, font, x, y, hudWidth, hudHeight, alpha, flags);
     if(wrap) 
         MGUI_RestoreCrop();
+}
+
+function void MGUI_SetTextColorCore(str code) {
+    mguiTextColor = StrLen(code) == 1 ? StrParam(s:"\c", s:code) : StrParam(s:"\c[", s:code, s:"]");
 }
 
 function void MGUI_CropCore(int left, int top, int width, int height, int hudWidth, int wrap, bool isStateless) { 
@@ -567,3 +578,4 @@ script "MegaUI DISCONNECT" (int player) DISCONNECT CLIENTSIDE {
     if(ConsolePlayerNumber() == player)
         EndMouseMenu();
 }
+
