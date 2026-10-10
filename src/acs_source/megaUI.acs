@@ -289,7 +289,7 @@ function void MGUI_SetAnchorCore(int anchorValue) {
     // Mouse menu  //
     /////////////////
 
-#DEFINE MGUI_MOUSE_AREA_MAX         256
+#DEFINE MGUI_MOUSE_AREA_MAX         1024
 #DEFINE MGUI_DEBUG_AREA_DRAWID      1
 #DEFINE MGUI_DEBUG_AREA_DRAWID_END  MGUI_DEBUG_AREA_DRAWID+MGUI_MOUSE_AREA_MAX
 
