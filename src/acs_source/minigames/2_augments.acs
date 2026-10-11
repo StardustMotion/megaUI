@@ -29,7 +29,6 @@ int augmentPicHudWidth[AUGMENTS_COUNT] = { 564, 2730, 1666 };	// SetHudSize widt
 int augmentPicHudHeight[AUGMENTS_COUNT] = { 423, 2047, 850 };	// SetHudSize height
 
 script "MegaUI Augments" (void) CLIENTSIDE {
-	MGUI_SetDebug(true);
 
 	// Start the mouse menu / receive callback events in given script
     if(!StartMouseMenu())
@@ -37,11 +36,11 @@ script "MegaUI Augments" (void) CLIENTSIDE {
 	SetPlayerProperty(0, true, PROP_TOTALLYFROZEN);
 
 	MGUIGames_DebugMessage(true);
+	AddMouseAltDown(MGUI_NULL_AREA, MEGAUI_DEBUG_SCRIPT_CALLBACK);
+	AddMouseAltUp(MGUI_NULL_AREA, MEGAUI_DEBUG_SCRIPT_CALLBACK);
 
 	// Title - write with 0.12s delay between each character (HUDMSG_TYPEON)
 	ShowText(DRAWID_AUGMENT_TITLE, "\cdCOLLECT YOURE TREASURE!!", "bigfont", 160, 29, 320, 240, 0, 1.0, MGUI_TYPEON|0.12);
-	AddMouseAltDown(MGUI_NULL_AREA, "MegaUI Minigame Debug ON");
-	AddMouseAltUp(MGUI_NULL_AREA, "MegaUI Minigame Debug OFF");
 	
 	// Draw augments
     for(int i = 0; i < AUGMENTS_COUNT; i++) {

@@ -20,6 +20,8 @@
 //     Minigames        //
 // -------------------- //
 #DEFINE DRAWID_MEGAUIGAMES_DEBUG 1200
+#DEFINE MEGAUI_DEBUG_SCRIPT_CALLBACK "MegaUI Minigame Debug"
+
 function void MGUIGames_DebugMessage(bool state) {
     if(state)
 	    ShowText(DRAWID_MEGAUIGAMES_DEBUG, "\cvHold altfire to enable debug and see mouse areas.", "smallfont", 
@@ -28,7 +30,11 @@ function void MGUIGames_DebugMessage(bool state) {
         Hide(DRAWID_MEGAUIGAMES_DEBUG);
 }
 
-//#include "minigames/1_windows.acs"
+script "MegaUI Minigame Debug" (int areaId, int e) {
+    MGUI_SetDebug(e == MGUI_EVENT_ALT_DOWN);
+}
+
+#include "minigames/1_windows.acs"
 #include "minigames/2_augments.acs"
 //#include "minigames/3_ddr.acs"
 //#include "minigames/4_loadout.acs"
