@@ -7,7 +7,7 @@
 
 **Notes**
 - If you prefer using raw SetHudSize/SetFont/HudMessage/SetHudClipRect ; or ACSUtils rendering functions instead of the below functions, you can.
-    - However, [anchoring](#void-setanchorint-anchorvalue) only works when drawing with MegaUI's functions.
+    - However, [SetAnchor()](#void-setanchorint-anchorvalue) and [SetTextColor()](#void-settextcolorstr-code) only work when drawing with MegaUI's functions.
 - All functions are expected to run in CLIENTSIDE context, on the affected player. So, **use [NamedExecuteClientScript](https://wiki.zandronum.com/ExecuteClientScript)**
     - ***Like any CLIENTSIDE context**, for a CLIENT => SERVER request (like "get a weapon", "change my velocity" etc), use [NamedRequestScriptPuke](https://wiki.zandronum.com/RequestScriptPuke)*
 
@@ -75,12 +75,11 @@ ShowText(1001, "Red text B"
 SetTextColor("N3");
 ShowText(1002, "Neon Orange text A"
 
-// Has the same effect as this
+// Displays the same result as this
 ShowText(1000, "\cgRed text A"
 ShowText(1001, "\cgRed text B"
 ShowText(1002, "\c[N3]Neon Orange text A"
 ```
-
 
 --- 
 ### `void Hide(int hudMessageId)`

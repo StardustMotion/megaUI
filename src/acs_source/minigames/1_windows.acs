@@ -22,7 +22,7 @@ int windowCount = 0;
 script "MegaUI Windows" (void) CLIENTSIDE {
 
 	// Start the mouse menu / receive callback events in given script
-    if(!StartMouseMenu("MegaUI Windows Callback"))
+    if(!StartMouseMenu())
         terminate;
 
 	SetPlayerProperty(0, true, PROP_TOTALLYFROZEN);

@@ -35,7 +35,7 @@ int     mguiEditorMouseType,
         mguiEditorMouseIsUniformScale;
 
 script "MegaUI Editor" (void) CLIENTSIDE {
-    if(!StartMouseMenu("MegaUI Editor Event")) {
+    if(!StartMouseMenu()) {
         MGUIEditor_Log("MegaUI Editor (or a another mod's mouse menu) is already running.");
         MGUIEditor_Play(MGUI_SFX_ERROR);
         terminate;

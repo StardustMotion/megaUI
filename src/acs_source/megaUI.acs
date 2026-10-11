@@ -112,12 +112,35 @@ function void ClearAnchor(void) {
 #DEFINE MGUI_EVENT_ALT_DOWN             4 // On altfire button press
 #DEFINE MGUI_EVENT_ALT_UP               5 // On altfire button release
 
+function void AddMouseEnter(int areaId, str scriptName) {   ACS_NamedExecuteWithResult("MegaUI API", 9, areaId, MGUI_EVENT_ENTER, scriptName); }
+function void AddMouseExit(int areaId, str scriptName) {    ACS_NamedExecuteWithResult("MegaUI API", 9, areaId, MGUI_EVENT_EXIT, scriptName); }
+function void AddMouseDown(int areaId, str scriptName) {    ACS_NamedExecuteWithResult("MegaUI API", 9, areaId, MGUI_EVENT_DOWN, scriptName); }
+function void AddMouseUp(int areaId, str scriptName) {      ACS_NamedExecuteWithResult("MegaUI API", 9, areaId, MGUI_EVENT_UP, scriptName); }
+function void AddMouseAltDown(int areaId, str scriptName) { ACS_NamedExecuteWithResult("MegaUI API", 9, areaId, MGUI_EVENT_ALT_DOWN, scriptName); }
+function void AddMouseAltUp(int areaId, str scriptName) {   ACS_NamedExecuteWithResult("MegaUI API", 9, areaId, MGUI_EVENT_ALT_UP, scriptName); }
+function void AddMouseEvents(int areaId, str scriptName) {  
+    AddMouseEnter(areaId, scriptName);  AddMouseExit(areaId, scriptName);       AddMouseDown(areaId, scriptName);
+    AddMouseUp(areaId, scriptName);     AddMouseAltDown(areaId, scriptName);    AddMouseAltUp(areaId, scriptName);
+}
+
+function void RemoveMouseEnter(int areaId) {                ACS_NamedExecuteWithResult("MegaUI API", 10, areaId, MGUI_EVENT_ENTER); }
+function void RemoveMouseExit(int areaId) {                 ACS_NamedExecuteWithResult("MegaUI API", 10, areaId, MGUI_EVENT_EXIT); }
+function void RemoveMouseDown(int areaId) {                 ACS_NamedExecuteWithResult("MegaUI API", 10, areaId, MGUI_EVENT_DOWN); }
+function void RemoveMouseUp(int areaId) {                   ACS_NamedExecuteWithResult("MegaUI API", 10, areaId, MGUI_EVENT_UP); }
+function void RemoveMouseAltDown(int areaId) {              ACS_NamedExecuteWithResult("MegaUI API", 10, areaId, MGUI_EVENT_ALT_DOWN); }
+function void RemoveMouseAltUp(int areaId) {                ACS_NamedExecuteWithResult("MegaUI API", 10, areaId, MGUI_EVENT_ALT_UP); }
+function void RemoveMouseEvents(int areaId) {  
+    RemoveMouseEnter(areaId);           RemoveMouseExit(areaId);                RemoveMouseDown(areaId);
+    RemoveMouseUp(areaId);              RemoveMouseAltDown(areaId);             RemoveMouseAltUp(areaId);
+}
+
+
 /* Enables mouse menu. It will send mouse events to the given @scriptName callback script with the arguments (int e, int areaId) :
     - @e event type
     - @areaId the mouse area id that triggered it
         - For fire/altfire button actions, if no area is hovered, areaId value will be MGUI_NULL_AREA
 It returns false if could not start due to another mod already using mouse menu, or if callback script does not exist */
-function bool   StartMouseMenu(str scriptName) {    return ACS_NamedExecuteWithResult("MegaUI Mouse Menu", scriptName); }
+function bool   StartMouseMenu(void) {              return ACS_NamedExecuteWithResult("MegaUI Mouse Menu"); }
 
 // Stops mouse menu
 function void   EndMouseMenu(void) {                ACS_NamedExecuteWithResult("MegaUI API", 0); }
@@ -307,8 +330,9 @@ function void MGUI_SetAnchorCore(int anchorValue) {
 #DEFINE MGUI_MOUSE_INTERACT         BT_ATTACK
 #DEFINE MGUI_MOUSE_ALT_INTERACT     BT_ALTATTACK
 
+#DEFINE MGUI_EVENT_SIZE             6 // Enter, Exit, Down, Up, AltDown, AltUp
+
 int     mguiIsMouseMenuRunning =    false,
-        mguiMouseArea =             MGUI_NULL_AREA,
         mguiMouseGraphic =          "DOOMCURS",
         mguiMouseOffsetX =          7,
         mguiMouseOffsetY =          14,
@@ -316,10 +340,9 @@ int     mguiIsMouseMenuRunning =    false,
         mguiMouseY =                0.5,
         mguiMouseHudWidth =         MGUI_HUD_WIDTH,
         mguiMouseHudHeight =        MGUI_HUD_HEIGHT,
-        mguiMouseSpeed =            1.0,
-        mguiMouseScript =           "MegaUI Mouse Callback";
-
-int     mguiMouseAreaCount = 0;
+        mguiMouseSpeed =            1.0;
+        
+int     mguiMouseAreaScanIndex[MGUI_EVENT_SIZE];
 
 int     mguiMouseAreaIds[MGUI_MOUSE_AREA_MAX+1],
         mguiMouseAreaX1[MGUI_MOUSE_AREA_MAX+1],
@@ -331,6 +354,25 @@ int     mguiMouseAreaDebugPosX[MGUI_MOUSE_AREA_MAX+1],
         mguiMouseAreaDebugPosY[MGUI_MOUSE_AREA_MAX+1],
         mguiMouseAreaDebugSizeAndAnchor[MGUI_MOUSE_AREA_MAX+1],
         mguiMouseAreaDebugHud[MGUI_MOUSE_AREA_MAX+1];
+
+str     mguiMouseAreaCallback[MGUI_MOUSE_AREA_MAX+1][MGUI_EVENT_SIZE];
+int     mguiMouseAreaCount;
+
+function str MGUI_GetMouseAreaCallback(int index, int e) {
+    return mguiMouseAreaCallback[index][e];
+}
+
+function void MGUI_SetMouseAreaCallback(int index, int e, str scriptName) {
+    mguiMouseAreaCallback[index][e] = scriptName;
+}
+
+function int MGUI_FindMouseAreaIndex(int areaId) {
+    for(int i = 0; i < mguiMouseAreaCount; i++) {
+        if(mguiMouseAreaIds[i] == areaId)
+            return i;
+    }
+    return -1;
+}
 
 script "MegaUI API" (int type, int arg1, int arg2, int arg3) CLIENTSIDE {
     switch(type) {
@@ -355,22 +397,23 @@ script "MegaUI API" (int type, int arg1, int arg2, int arg3) CLIENTSIDE {
                 SetResultValue(false);
                 terminate;
             }
-            for(int i = 0; i < mguiMouseAreaCount; i++) {
-                if(mguiMouseAreaIds[i] == arg1) {
-                    for(int j = i; j <= mguiMouseAreaCount; j++) {
-                        mguiMouseAreaIds[j] =               mguiMouseAreaIds[j+1];
-                        mguiMouseAreaX1[j] =                mguiMouseAreaX1[j+1];
-                        mguiMouseAreaX2[j] =                mguiMouseAreaX2[j+1];
-                        mguiMouseAreaY1[j] =                mguiMouseAreaY1[j+1];
-                        mguiMouseAreaY2[j] =                mguiMouseAreaY2[j+1];
-                        mguiMouseAreaDebugPosX[j] =         mguiMouseAreaDebugPosX[j+1];
-                        mguiMouseAreaDebugPosY[j] =         mguiMouseAreaDebugPosY[j+1];
-                        mguiMouseAreaDebugSizeAndAnchor[j] =mguiMouseAreaDebugSizeAndAnchor[j+1];
-                        mguiMouseAreaDebugHud[j] =          mguiMouseAreaDebugHud[j+1];
-                    }
-                    mguiMouseAreaCount--;
-                    MGUI_SetDebugAreaDisplay(mguiMouseAreaCount, false);
+            type = MGUI_FindMouseAreaIndex(arg1);
+            if(type != -1) {
+                for(int j = type; j <= mguiMouseAreaCount; j++) {
+                    mguiMouseAreaIds[j] =               mguiMouseAreaIds[j+1];
+                    mguiMouseAreaX1[j] =                mguiMouseAreaX1[j+1];
+                    mguiMouseAreaX2[j] =                mguiMouseAreaX2[j+1];
+                    mguiMouseAreaY1[j] =                mguiMouseAreaY1[j+1];
+                    mguiMouseAreaY2[j] =                mguiMouseAreaY2[j+1];
+                    mguiMouseAreaDebugPosX[j] =         mguiMouseAreaDebugPosX[j+1];
+                    mguiMouseAreaDebugPosY[j] =         mguiMouseAreaDebugPosY[j+1];
+                    mguiMouseAreaDebugSizeAndAnchor[j] =mguiMouseAreaDebugSizeAndAnchor[j+1];
+                    mguiMouseAreaDebugHud[j] =          mguiMouseAreaDebugHud[j+1];
+                    for(int i = 0; i < 6; i++)
+                        mguiMouseAreaCallback[j][i] =   mguiMouseAreaCallback[j+1][i];
                 }
+                mguiMouseAreaCount--;
+                MGUI_SetDebugAreaDisplay(mguiMouseAreaCount, false);
             }
             break;
 
@@ -402,7 +445,23 @@ script "MegaUI API" (int type, int arg1, int arg2, int arg3) CLIENTSIDE {
         case 7: mguiMouseY = MGUI_Clamp(arg1, 0, 1.0); break;
 
         // GetMouseArea
-        case 8: SetResultValue(mguiMouseArea); break;
+        case 8: SetResultValue(0); break; // !!!!!!!!!!!!!!!!!!!!!!!!!
+
+        // Add Mouse Event
+        case 9: 
+            int index = MGUI_FindMouseAreaIndex(arg1);
+            if(index != -1)
+                MGUI_SetMouseAreaCallback(index, arg2, arg3);
+            else
+                MGUI_Log(StrParam(s:"Warning : tried to add a mouse event on areaId = ", d:arg1, s:" but it was not defined with SetMouseArea"));
+            break;
+
+        // Remove Mouse Event
+        case 10:
+            index = MGUI_FindMouseAreaIndex(arg1);
+            if(index != -1)
+                MGUI_SetMouseAreaCallback(index, arg2, 0);
+            break;
     }
 }
 
@@ -463,31 +522,28 @@ script "MegaUI SetMouseArea API" (int areaId, int arg1, int arg2, int arg3) CLIE
 }
 
 // The mouse draw/area poll thread
-script "MegaUI Mouse Menu" (int scriptName) CLIENTSIDE {
-    if(!CheckScript(scriptName, true)) {
-        MGUI_Log(StrParam( s:"Can't start Mouse Menu : the [\c[31]", s:scriptName, s:"\c-] provided callback script does not exist!"));
-        SetResultValue(false);
-        terminate;
-    }
-    else if(mguiIsMouseMenuRunning) {
+script "MegaUI Mouse Menu" (void) CLIENTSIDE {
+    if(mguiIsMouseMenuRunning) {
         MGUI_Log("Warning : tried to start Mouse Menu while one was already running.");
         SetResultValue(false);
         terminate;
     }
     SetResultValue(true);
     mguiIsMouseMenuRunning =    true; 
-    mguiMouseScript =           scriptName;
     mguiMouseAreaCount =    0;
     for(int i = 0; i < MGUI_MOUSE_AREA_MAX+1; i++)
         mguiMouseAreaIds[i] = MGUI_NULL_AREA;
 
-    int prevArea = MGUI_NULL_AREA;
-    mguiMouseArea = prevArea;
+    int mguiPrevEnterIndex = -1;
+    int mguiPrevExitIndex = -1;
+    for(i = 0; i < MGUI_EVENT_SIZE; i++)
+        mguiMouseAreaScanIndex[i] = -1;
     SetMouseX(0.5);
     SetMouseY(0.5);
     while(mguiIsMouseMenuRunning) {
         if(mguiIsDebug)
-            Draw(mguiMouseArea == MGUI_NULL_AREA ? "MEGAUI_Y" : "MEGAUI_X", 
+            Draw("MEGAUI_Y",
+            //Draw(mguiMouseArea == MGUI_NULL_AREA ? "MEGAUI_Y" : "MEGAUI_X", 
                 (GetMouseX()*MGUI_HUD_WIDTH)>>16, (GetMouseY()*MGUI_HUD_HEIGHT)>>16, 
                 MGUI_HUD_WIDTH, MGUI_HUD_HEIGHT, 1.0);
 
@@ -498,28 +554,45 @@ script "MegaUI Mouse Menu" (int scriptName) CLIENTSIDE {
             mguiMouseHudHeight, 
             1.0);
 
-        mguiMouseArea = MGUI_GetMouseAreaId();
-
-		// Event detection
+            // ------- Event detection ------- // 
         int input = GetPlayerInput(-1, INPUT_BUTTONS);
 		int inputDelta = GetPlayerInput(-1, INPUT_OLDBUTTONS) ^ input;
 
-        if(inputDelta & MGUI_MOUSE_INTERACT)
-			ACS_NamedExecuteWithResult(mguiMouseScript, (input & MGUI_MOUSE_INTERACT) ? MGUI_EVENT_DOWN : MGUI_EVENT_UP, mguiMouseArea);
-        else if(inputDelta & MGUI_MOUSE_ALT_INTERACT)
-			ACS_NamedExecuteWithResult(mguiMouseScript, (input & MGUI_MOUSE_ALT_INTERACT) ? MGUI_EVENT_ALT_DOWN : MGUI_EVENT_ALT_UP, mguiMouseArea);
-        if(mguiMouseArea != prevArea) {
-            if(prevArea != MGUI_NULL_AREA)  {
-                // Won't call EXIT event on an area that just got deleted
-                for(i = 0; i < mguiMouseAreaCount; i++) 
-                    if(mguiMouseAreaIds[i] == prevArea) { 
-                        ACS_NamedExecuteWithResult(mguiMouseScript, MGUI_EVENT_EXIT, prevArea);
-                        break;
-                    }
+        MGUI_ScanMouseAreas();
+
+        // Left click
+        if(inputDelta & MGUI_MOUSE_INTERACT) {
+            // Down
+            if((input & MGUI_MOUSE_INTERACT) && (mguiMouseAreaScanIndex[MGUI_EVENT_DOWN] != -1))
+                ACS_NamedExecuteWithResult(MGUI_GetMouseAreaCallback(mguiMouseAreaScanIndex[MGUI_EVENT_DOWN], MGUI_EVENT_DOWN), mguiMouseAreaIds[mguiMouseAreaScanIndex[MGUI_EVENT_DOWN]], MGUI_EVENT_DOWN);
+            // Up
+            if(!(input & MGUI_MOUSE_INTERACT) && (mguiMouseAreaScanIndex[MGUI_EVENT_UP] != -1))
+                ACS_NamedExecuteWithResult(MGUI_GetMouseAreaCallback(mguiMouseAreaScanIndex[MGUI_EVENT_UP], MGUI_EVENT_UP), mguiMouseAreaIds[mguiMouseAreaScanIndex[MGUI_EVENT_UP]], MGUI_EVENT_UP);
+        }
+        // Right click
+        else if(inputDelta & MGUI_MOUSE_ALT_INTERACT) {
+            // Down
+            if((input & MGUI_MOUSE_ALT_INTERACT) && (mguiMouseAreaScanIndex[MGUI_EVENT_ALT_DOWN] != -1))
+                ACS_NamedExecuteWithResult(MGUI_GetMouseAreaCallback(mguiMouseAreaScanIndex[MGUI_EVENT_ALT_DOWN], MGUI_EVENT_ALT_DOWN), mguiMouseAreaIds[mguiMouseAreaScanIndex[MGUI_EVENT_ALT_DOWN]], MGUI_EVENT_ALT_DOWN);
+            // Up
+            if(!(input & MGUI_MOUSE_ALT_INTERACT) && (mguiMouseAreaScanIndex[MGUI_EVENT_ALT_UP] != -1))
+                ACS_NamedExecuteWithResult(MGUI_GetMouseAreaCallback(mguiMouseAreaScanIndex[MGUI_EVENT_ALT_UP], MGUI_EVENT_ALT_UP), mguiMouseAreaIds[mguiMouseAreaScanIndex[MGUI_EVENT_ALT_UP]], MGUI_EVENT_ALT_UP);
+        }
+
+        // Mouse enter
+        if(mguiMouseAreaScanIndex[MGUI_EVENT_ENTER] != mguiPrevEnterIndex) {
+            mguiPrevEnterIndex = mguiMouseAreaScanIndex[MGUI_EVENT_ENTER];
+            if(mguiPrevEnterIndex != -1)
+                ACS_NamedExecuteWithResult(MGUI_GetMouseAreaCallback(mguiPrevEnterIndex, MGUI_EVENT_ENTER), mguiMouseAreaIds[mguiPrevEnterIndex], MGUI_EVENT_ENTER);
+        }
+        // Mouse exit
+        if(mguiMouseAreaScanIndex[MGUI_EVENT_EXIT] != mguiPrevExitIndex) {
+            if(mguiPrevExitIndex != -1) {
+                // Don't call EXIT event on an area that just got deleted
+                if(MGUI_FindMouseAreaIndex(mguiPrevExitIndex) != -1)
+                    ACS_NamedExecuteWithResult(MGUI_GetMouseAreaCallback(mguiPrevExitIndex, MGUI_EVENT_EXIT), mguiMouseAreaIds[mguiPrevExitIndex], MGUI_EVENT_EXIT);
             }
-            if(mguiMouseArea != MGUI_NULL_AREA)      
-                ACS_NamedExecuteWithResult(mguiMouseScript, MGUI_EVENT_ENTER, mguiMouseArea);
-            prevArea = mguiMouseArea;
+            mguiPrevExitIndex = mguiMouseAreaScanIndex[MGUI_EVENT_EXIT];
         }
 
         // Mouse delta
@@ -533,18 +606,26 @@ script "MegaUI Mouse Menu" (int scriptName) CLIENTSIDE {
     }
 }
 
-function int MGUI_GetMouseAreaId(void) {
+function void MGUI_ScanMouseAreas(void) {
+    for(int e = 0; e < MGUI_EVENT_SIZE; e++)
+        mguiMouseAreaScanIndex[e] = -1;
     int x = GetMouseX(), 
         y = GetMouseY();
-	int areaId = MGUI_NULL_AREA;
     for(int i = 0; i < mguiMouseAreaCount; i++) {
         // Check if within rectangle
         if(x >= mguiMouseAreaX1[i]) { if(x < mguiMouseAreaX2[i]) { if(y >= mguiMouseAreaY1[i]) { if(y < mguiMouseAreaY2[i]) {
-            if(mguiMouseAreaIds[i] < areaId)
-				areaId = mguiMouseAreaIds[i];
+            for(e = 0; e < MGUI_EVENT_SIZE; e++) {
+                // Check if this area triggers this event
+                if(MGUI_GetMouseAreaCallback(i, e)) { 
+                    // Check if has lower areaId (== higher layer priority)
+                    if(mguiMouseAreaScanIndex[e] == -1)
+                        mguiMouseAreaScanIndex[e] = i;
+                    else if(mguiMouseAreaIds[i] < mguiMouseAreaIds[mguiMouseAreaScanIndex[e]])
+                        mguiMouseAreaScanIndex[e] = i;
+                }
+            }
         } } } }
     }
-    return areaId;
 }
 
 function void MGUI_SetDebugAreaDisplay(int slot, int state) {
@@ -578,4 +659,5 @@ script "MegaUI DISCONNECT" (int player) DISCONNECT CLIENTSIDE {
     if(ConsolePlayerNumber() == player)
         EndMouseMenu();
 }
+
 

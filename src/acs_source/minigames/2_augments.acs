@@ -29,9 +29,10 @@ int augmentPicHudWidth[AUGMENTS_COUNT] = { 564, 2730, 1666 };	// SetHudSize widt
 int augmentPicHudHeight[AUGMENTS_COUNT] = { 423, 2047, 850 };	// SetHudSize height
 
 script "MegaUI Augments" (void) CLIENTSIDE {
+	MGUI_SetDebug(true);
 
 	// Start the mouse menu / receive callback events in given script
-    if(!StartMouseMenu("MegaUI Augments Callback"))
+    if(!StartMouseMenu())
         terminate;
 	SetPlayerProperty(0, true, PROP_TOTALLYFROZEN);
 
@@ -39,6 +40,8 @@ script "MegaUI Augments" (void) CLIENTSIDE {
 
 	// Title - write with 0.12s delay between each character (HUDMSG_TYPEON)
 	ShowText(DRAWID_AUGMENT_TITLE, "\cdCOLLECT YOURE TREASURE!!", "bigfont", 160, 29, 320, 240, 0, 1.0, MGUI_TYPEON|0.12);
+	AddMouseAltDown(MGUI_NULL_AREA, "MegaUI Minigame Debug ON");
+	AddMouseAltUp(MGUI_NULL_AREA, "MegaUI Minigame Debug OFF");
 	
 	// Draw augments
     for(int i = 0; i < AUGMENTS_COUNT; i++) {
@@ -52,53 +55,42 @@ script "MegaUI Augments" (void) CLIENTSIDE {
         ShowText(augmentNameId, augmentName[i], "SMALLFONT", 	x, 110, 320, 300, 66, 1.0, MGUI_CENTER);
         Show(augmentPicId, augmentGraphic[i],					augmentPicX[i], augmentPicY[i], augmentPicHudWidth[i], augmentPicHudHeight[i], 1.0);
         Show(augmentBackgroundId, "megauig0", 					x, 120,	320, 240, 1.0);
-        SetMouseArea(i, 										x, 122, 320, 240, 82, 128);
+
+		// Register mouse areas that trigger "Enter", "Exit", and "Left click" events
+		int areaId = i;
+        SetMouseArea(areaId, x, 122, 320, 240, 82, 128);
+		AddMouseEnter(areaId, "MegaUI Augments On Enter");
+		AddMouseExit(areaId, "MegaUI Augments On Exit");
+		AddMouseDown(areaId, "MegaUI Augments On Click");
     }
 }
 
-// Receive mouse events
-script "MegaUI Augments Callback" (int e, int areaId) {
-	switch(e) {
+// On hovering an area
+script "MegaUI Augments On Enter" (int areaId) {
+	SetAugmentHighlight(areaId, true);
+	LocalAmbientSound("MEGAUIG2", 127);
+}
 
-		// On hover area
-		case MGUI_EVENT_ENTER:
-			SetAugmentHighlight(areaId, true);
-			LocalAmbientSound("MEGAUIG2", 127);
-			break;
+// On exiting an area
+script "MegaUI Augments On Exit" (int areaId) {
+	SetAugmentHighlight(areaId, false);
+}
 
-		// On exit area
-		case MGUI_EVENT_EXIT:
-			SetAugmentHighlight(areaId, false);
-			break;
-
-
-		// On fire press
-		case MGUI_EVENT_DOWN:
-			switch(areaId) {
-				case 0: GiveInventory("GreenArmor", 1); break;
-				case 1: GiveInventory("RocketLauncher", 1); break;
-				case 2: GiveInventory("Clip", 200); break;
-			}
-			LocalAmbientSound("MEGAUIG1", 127);
-			for(int i = DRAWID_AUGMENT_TITLE; i < DRAWID_AUGMENT_END; i++)
-				Hide(i);
-			SetPlayerProperty(0, false, PROP_TOTALLYFROZEN);
-
-			// Stops the mouse system
-			EndMouseMenu();
-			MGUIGames_DebugMessage(false);
-			break;
-
-		// On altfire press
-		case MGUI_EVENT_ALT_DOWN:
-			MGUI_SetDebug(true);
-			break;
-
-		// On altfire release
-		case MGUI_EVENT_ALT_UP:
-			MGUI_SetDebug(false);
-			break;
+// On left click on area
+script "MegaUI Augments On Click" (int areaId) {
+	switch(areaId) {
+		case 0: GiveInventory("GreenArmor", 1); break;
+		case 1: GiveInventory("RocketLauncher", 1); break;
+		case 2: GiveInventory("Clip", 200); break;
 	}
+	LocalAmbientSound("MEGAUIG1", 127);
+	for(int i = DRAWID_AUGMENT_TITLE; i < DRAWID_AUGMENT_END; i++)
+		Hide(i);
+	SetPlayerProperty(0, false, PROP_TOTALLYFROZEN);
+
+	// Stops the mouse system
+	EndMouseMenu();
+	MGUIGames_DebugMessage(false);
 }
 
 function void SetAugmentHighlight(int areaId, bool state) {

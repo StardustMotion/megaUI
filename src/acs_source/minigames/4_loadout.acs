@@ -47,7 +47,7 @@ script "MegaUI Loadout" (void) CLIENTSIDE {
 
 function void InitLoadout(void) {
 	// Start the mouse menu / receive callback events in given script
-    if(!StartMouseMenu("MegaUI Loadout Callback"))
+    if(!StartMouseMenu())
         return;
 
 	SetPlayerProperty(0, true, PROP_TOTALLYFROZEN);

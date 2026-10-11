@@ -180,7 +180,7 @@ int ddrCombo;
 script "MegaUI DDR" (void) CLIENTSIDE {
 
 	// Start the mouse menu / receive callback events in given script
-    if(!StartMouseMenu("MegaUI DDR Callback"))
+    if(!StartMouseMenu())
         terminate;
 
 	SetPlayerProperty(0, true, PROP_TOTALLYFROZEN);
