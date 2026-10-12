@@ -36,6 +36,7 @@ script "MegaUI Augments" (void) CLIENTSIDE {
 	SetPlayerProperty(0, true, PROP_TOTALLYFROZEN);
 
 	MGUIGames_DebugMessage(true);
+    // Hold right click anywhere to enable MegaUI debug
 	AddMouseAltDown(MGUI_NULL_AREA, MEGAUI_DEBUG_SCRIPT_CALLBACK);
 	AddMouseAltUp(MGUI_NULL_AREA, MEGAUI_DEBUG_SCRIPT_CALLBACK);
 

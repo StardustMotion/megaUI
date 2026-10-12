@@ -152,10 +152,10 @@ function void   SetMouseArea(int areaId, int x, int y, int hudWidth, int hudHeig
     ACS_NamedExecuteWithResult("MegaUI SetMouseArea API", areaId, (y<<16)|(x+0x7FFF), (hudHeight<<16)|hudWidth, (MGUI_GetAnchor()<<28)|(height<<14)|width); 
 }
 
-// Returns the currently hovered mouse areaId, or MGUI_NULL_AREA if none
-function int    GetMouseArea(void) {                return ACS_NamedExecuteWithResult("MegaUI API", 8); }
+// Returns true if the mouse is currently hovering the given areaId
+function bool   CheckMouseArea(int areaId) {        return ACS_NamedExecuteWithResult("MegaUI API", 8, areaId); }
 
-// Unregisters a mouse area
+// Unregisters a mouse area ; also unregisters all its AddMouseXXX mouse events
 function void   DeleteMouseArea(int areaId) {       ACS_NamedExecuteWithResult("MegaUI API", 1, areaId); }
 
 // Shorthand for <count> consecutive DeleteMouseArea() calls, starting from <areaId>
@@ -341,7 +341,7 @@ int     mguiIsMouseMenuRunning =    false,
         mguiMouseHudHeight =        MGUI_HUD_HEIGHT,
         mguiMouseSpeed =            1.0;
         
-int     mguiMouseAreaScanIndex[MGUI_EVENT_SIZE];
+int     mguiMouseAreaScan[MGUI_EVENT_SIZE];
 
 int     mguiMouseAreaIds[MGUI_MOUSE_AREA_MAX+1],
         mguiMouseAreaX1[MGUI_MOUSE_AREA_MAX+1],
@@ -444,12 +444,20 @@ script "MegaUI API" (int type, int arg1, int arg2, int arg3) CLIENTSIDE {
         // SetMouseY
         case 7: mguiMouseY = MGUI_Clamp(arg1, 0, 1.0); break;
 
-        // GetMouseArea
-        case 8: SetResultValue(0); break; // !!!!!!!!!!!!!!!!!!!!!!!!!
+        // CheckMouseArea
+        case 8: 
+            int index = MGUI_FindMouseAreaIndex(arg1);
+            if(index == -1) {
+                MGUI_Log(StrParam(s:"Warning : tried to use CheckMouseArea on areaId = ", d:arg1, s:" but it was not defined with SetMouseArea"));
+                SetResultValue(false);
+                terminate;
+            }
+            SetResultValue(MGUI_IsWithinAreaId(index));
+            break;
 
         // Add Mouse Event
         case 9: 
-            int index = MGUI_FindMouseAreaIndex(arg1);
+            index = MGUI_FindMouseAreaIndex(arg1);
             if(index != -1)
                 MGUI_SetMouseAreaCallback(index, arg2, arg3);
             else
@@ -459,8 +467,17 @@ script "MegaUI API" (int type, int arg1, int arg2, int arg3) CLIENTSIDE {
         // Remove Mouse Event
         case 10:
             index = MGUI_FindMouseAreaIndex(arg1);
-            if(index != -1)
-                MGUI_SetMouseAreaCallback(index, arg2, 0);
+            if(index != -1) {
+                type = MGUI_GetMouseAreaCallback(index, arg2);
+                if(type) {
+                    // Exit event case : if mouse is hovering the area, call it before unregistering it
+                    if(arg2 == MGUI_EVENT_EXIT) {
+                        if(CheckMouseArea(arg1))
+                            ACS_NamedExecuteWithResult(type, arg1, arg2);
+                    }
+                    MGUI_SetMouseAreaCallback(index, arg2, 0);
+                }
+            }
             break;
     }
 }
@@ -524,10 +541,11 @@ script "MegaUI Mouse Menu" (void) CLIENTSIDE {
 
     SetMouseArea(MGUI_NULL_AREA, MGUI_HUD_WIDTH>>3, MGUI_HUD_HEIGHT>>3, MGUI_HUD_WIDTH>>2, MGUI_HUD_HEIGHT>>2, 4096, 4096);
 
-    int mguiPrevEnterIndex = -1;
-    int mguiPrevExitIndex = -1;
     for(i = 0; i < MGUI_EVENT_SIZE; i++)
-        mguiMouseAreaScanIndex[i] = -1;
+        mguiMouseAreaScan[i] = MGUI_NO_AREA_ID;
+    int mguiMouseAreaPrevEnter = MGUI_NO_AREA_ID;
+    int mguiMouseAreaPrevExit = MGUI_NO_AREA_ID;
+
     SetMouseX(0.5);
     SetMouseY(0.5);
     while(mguiIsMouseMenuRunning) {
@@ -553,54 +571,30 @@ script "MegaUI Mouse Menu" (void) CLIENTSIDE {
 
         // Left click
         if(inputDelta & BT_ATTACK) {
-            // Down
-            if(input & BT_ATTACK) {
-                int areaIndex = mguiMouseAreaScanIndex[MGUI_EVENT_DOWN];
-                if(areaIndex != -1)
-                    ACS_NamedExecuteWithResult(MGUI_GetMouseAreaCallback(areaIndex, MGUI_EVENT_DOWN), mguiMouseAreaIds[areaIndex], MGUI_EVENT_DOWN);
-            }
-            // Up
-            else {
-                areaIndex = mguiMouseAreaScanIndex[MGUI_EVENT_UP];
-                if(areaIndex != -1)
-                    ACS_NamedExecuteWithResult(MGUI_GetMouseAreaCallback(areaIndex, MGUI_EVENT_UP), mguiMouseAreaIds[areaIndex], MGUI_EVENT_UP);
-            }
+            if(input & BT_ATTACK)   MGUI_Callback(MGUI_EVENT_DOWN);
+            else                    MGUI_Callback(MGUI_EVENT_UP);
         }
         // Right click
         else if(inputDelta & BT_ALTATTACK) {
-            // Down
-            if(input & BT_ALTATTACK) {
-                areaIndex = mguiMouseAreaScanIndex[MGUI_EVENT_ALT_DOWN];
-                if(areaIndex != -1)
-                    ACS_NamedExecuteWithResult(MGUI_GetMouseAreaCallback(areaIndex, MGUI_EVENT_ALT_DOWN), mguiMouseAreaIds[areaIndex], MGUI_EVENT_ALT_DOWN);
-            }
-            // Up
-            else {
-                areaIndex = mguiMouseAreaScanIndex[MGUI_EVENT_ALT_UP];
-                if(areaIndex != -1)
-                    ACS_NamedExecuteWithResult(MGUI_GetMouseAreaCallback(areaIndex, MGUI_EVENT_ALT_UP), mguiMouseAreaIds[areaIndex], MGUI_EVENT_ALT_UP);
-            }
+            if(input & BT_ALTATTACK)    MGUI_Callback(MGUI_EVENT_ALT_DOWN);
+            else                        MGUI_Callback(MGUI_EVENT_ALT_UP);
         }
-
         // Mouse enter
-        if(mguiMouseAreaScanIndex[MGUI_EVENT_ENTER] != mguiPrevEnterIndex) {
-            mguiPrevEnterIndex = mguiMouseAreaScanIndex[MGUI_EVENT_ENTER];
-            if(mguiPrevEnterIndex != -1)
-                ACS_NamedExecuteWithResult(MGUI_GetMouseAreaCallback(mguiPrevEnterIndex, MGUI_EVENT_ENTER), mguiMouseAreaIds[mguiPrevEnterIndex], MGUI_EVENT_ENTER);
+        if(mguiMouseAreaPrevEnter != mguiMouseAreaScan[MGUI_EVENT_ENTER]) {
+            mguiMouseAreaPrevEnter = mguiMouseAreaScan[MGUI_EVENT_ENTER];
+            MGUI_Callback(MGUI_EVENT_ENTER);
         }
         // Mouse exit
-        if(mguiMouseAreaScanIndex[MGUI_EVENT_EXIT] != mguiPrevExitIndex) {
-            if(mguiPrevExitIndex != -1) {
-                // Don't call try to call exit event on an area that just got deleted
-                areaIndex = MGUI_FindMouseAreaIndex(mguiPrevExitIndex);
-                if(areaIndex != -1) {
-                    // ... or that stopped listening to exit events
-                    areaIndex = MGUI_GetMouseAreaCallback(areaIndex, MGUI_EVENT_EXIT);
-                    if(areaIndex)
-                        ACS_NamedExecuteWithResult(areaIndex, mguiMouseAreaIds[mguiPrevExitIndex], MGUI_EVENT_EXIT);
-                }
+        if(mguiMouseAreaPrevExit != mguiMouseAreaScan[MGUI_EVENT_EXIT]) {
+            if(mguiMouseAreaPrevExit != MGUI_NO_AREA_ID) {
+                // Callback the previous areaId
+                i = mguiMouseAreaPrevExit;
+                mguiMouseAreaPrevExit = mguiMouseAreaScan[MGUI_EVENT_EXIT];
+                mguiMouseAreaScan[MGUI_EVENT_EXIT] = i;
+                MGUI_Callback(MGUI_EVENT_EXIT);
             }
-            mguiPrevExitIndex = mguiMouseAreaScanIndex[MGUI_EVENT_EXIT];
+            else 
+                mguiMouseAreaPrevExit = mguiMouseAreaScan[MGUI_EVENT_EXIT];
         }
 
         // Mouse delta
@@ -614,26 +608,45 @@ script "MegaUI Mouse Menu" (void) CLIENTSIDE {
     }
 }
 
+function void MGUI_Callback(int e) {
+    int areaId = mguiMouseAreaScan[e];
+    if(areaId != MGUI_NO_AREA_ID) {
+        str scriptName = MGUI_GetMouseAreaCallback(MGUI_FindMouseAreaIndex(areaId), e);
+        if(scriptName)
+            ACS_NamedExecuteWithResult(scriptName, areaId, e);
+    }
+}
+
 function void MGUI_ScanMouseAreas(void) {
     for(int e = 0; e < MGUI_EVENT_SIZE; e++)
-        mguiMouseAreaScanIndex[e] = -1;
+        mguiMouseAreaScan[e] = MGUI_NO_AREA_ID;
+
     int x = GetMouseX(), 
         y = GetMouseY();
     for(int i = 0; i < mguiMouseAreaCount; i++) {
         // Check if within rectangle
-        if(x >= mguiMouseAreaX1[i]) { if(x < mguiMouseAreaX2[i]) { if(y >= mguiMouseAreaY1[i]) { if(y < mguiMouseAreaY2[i]) {
+        if(MGUI_IsWithinAreaId(i)) {
             for(e = 0; e < MGUI_EVENT_SIZE; e++) {
-                // Check if this area triggers this event
-                if(MGUI_GetMouseAreaCallback(i, e)) { 
+                // Check if it registered this event
+                if(MGUI_GetMouseAreaCallback(i, e)) {
                     // Check if has lower areaId (== higher layer priority)
-                    if(mguiMouseAreaScanIndex[e] == -1)
-                        mguiMouseAreaScanIndex[e] = i;
-                    else if(mguiMouseAreaIds[i] < mguiMouseAreaIds[mguiMouseAreaScanIndex[e]])
-                        mguiMouseAreaScanIndex[e] = i;
+                    int areaId = mguiMouseAreaIds[i]; 
+                    if(mguiMouseAreaScan[e] == MGUI_NO_AREA_ID)
+                        mguiMouseAreaScan[e] = areaId;
+                    else if(areaId < mguiMouseAreaScan[e])
+                        mguiMouseAreaScan[e] = areaId;
                 }
             }
-        } } } }
+        }
     }
+}
+
+function bool MGUI_IsWithinAreaId(int index) {
+    int x = GetMouseX(), y = GetMouseY();
+    if(x >= mguiMouseAreaX1[index]) { if(x < mguiMouseAreaX2[index]) { if(y >= mguiMouseAreaY1[index]) { if(y < mguiMouseAreaY2[index])
+        return true;
+    } } }
+    return false;
 }
 
 function void MGUI_SetDebugAreaDisplay(int slot, int state) {
@@ -670,4 +683,22 @@ script "MegaUI DISCONNECT" (int player) DISCONNECT CLIENTSIDE {
         EndMouseMenu();
 }
 
+/*
+script "megad" (void) {
+    str final = "";
+    for(int i = 0; i < mguiMouseAreaCount; i++) {
+        str builder = StrParam(s:"index ", d:i, s:" areaid ", d:mguiMouseAreaIds[i]);
+        for(int j = 0; j < MGUI_EVENT_SIZE; j++) {
+            int callback = MGUI_GetMouseAreaCallback(i, j);
+            builder = StrParam(s:builder, s:"\n");
+            if(callback)    builder = StrParam(s:builder, s:callback);
+            else            builder = StrParam(s:builder, s:"~0~ ");
+        }
+        final = StrParam(s:final, s:builder, s:"\n\n");
+    }
+    log(s:final);
+
+}
+
+*/
 

@@ -6,8 +6,8 @@
 /*  
         [ Close all opened windows mini game ]
 
-    > For simplicity, windows are closable from last to first spawned
-        - Window interaction on/off is updated accordingly when a window spawns/gets closed
+    > For simplicity, only the topmost window is closable
+        - Window interaction on/off is updated accordingly when a window opens/closes
     > The cursor is custom ; changes upon hovering close button
 */
 
@@ -28,6 +28,7 @@ script "MegaUI Windows" (void) CLIENTSIDE {
 	SetPlayerProperty(0, true, PROP_TOTALLYFROZEN);
 
 	MGUIGames_DebugMessage(true);
+    // Hold right click anywhere to enable MegaUI debug
 	AddMouseAltDown(MGUI_NULL_AREA, MEGAUI_DEBUG_SCRIPT_CALLBACK);
 	AddMouseAltUp(MGUI_NULL_AREA, MEGAUI_DEBUG_SCRIPT_CALLBACK);
 
@@ -38,6 +39,7 @@ script "MegaUI Windows" (void) CLIENTSIDE {
         AddWindow(); 
         delay(4); 
     }
+    // Make topmost window interactable
     EnableWindowEvents(windowAreaIdCount);
     while(true) {
         for(i = 0; i < 145; i++) {
@@ -58,6 +60,7 @@ script "MegaUI Windows" (void) CLIENTSIDE {
                 terminate;
             }
         }
+        // Spawn window : disable the (topmost-1) window interaction, enable the topmost one's interaction
         if(windowAreaIdCount < WINDOWS_MAX) {
             AddWindow();
             DisableWindowEvents(windowAreaIdCount-1);
@@ -115,8 +118,6 @@ function void DisableWindowEvents(int areaId) {
     RemoveMouseEnter(areaId);
     RemoveMouseExit(areaId);
     RemoveMouseDown(areaId);
-    // Manual exit event trigger, in case it was being hovered
-    ACS_NamedExecuteWithResult("MegaUI Windows On Exit", areaId); 
 }
 
 // On hovering topmost window mouse area- turn mouse cursor into a finger
@@ -131,7 +132,7 @@ script "MegaUI Windows On Exit" (void) {
 
 // On fire press on a window's [X]
 script "MegaUI Windows On Click" (int areaId) {
-    DeleteMouseArea(areaId);
+    DeleteMouseArea(areaId); // Delete the mouse area and all its events
     Hide(DRAWID_WINDOWS_END-windowAreaIdCount);
     windowAreaIdCount--;
     RefreshWindowTitle();
