@@ -1,13 +1,16 @@
 # API
 
-### - [General rendering](#general-rendering)
-### - [Mouse menu](#mouse-menu)
+- [General rendering](#general-rendering)
+- [Mouse menu](#mouse-menu)
+    - [Example](#mouse-menu-example)
+    - [Events](#mouse-menu-events)
+    - [Misc](#mouse-menu-misc)
 
 # General rendering
 
 **Notes**
 - If you prefer using raw SetHudSize/SetFont/HudMessage/SetHudClipRect ; or ACSUtils rendering functions instead of the below functions, you can.
-    - However, [SetAnchor()](#void-setanchorint-anchorvalue) and [SetTextColor()](#void-settextcolorstr-code) only work when drawing with MegaUI's functions.
+    - However, [Anchoring](#anchoring) and [SetTextColor()](#void-settextcolorstr-code) only work when drawing with MegaUI's functions.
 - All functions are expected to run in CLIENTSIDE context, on the affected player. So, **use [NamedExecuteClientScript](https://wiki.zandronum.com/ExecuteClientScript)**
     - ***Like any CLIENTSIDE context**, for a CLIENT => SERVER request (like "get a weapon", "change my velocity" etc), use [NamedRequestScriptPuke](https://wiki.zandronum.com/RequestScriptPuke)*
 
@@ -41,9 +44,9 @@ Same as `Show()`, but is drawn for 1 tic only. Does not need hudMessageId ; it a
 --- 
 
 ### `void ShowText(int hudMessageId, str text, str font, int x, int y, int hudWidth, int hudHeight, int wrap, int alpha, int flags)`
-Like `Show()` but for text. Particular parameters :
+Like `Show()` but for text.
 
-- `wrap` same as `SetHudClipRect`'s `wrapwidth` 
+- `wrap` same as `SetHudClipRect`'s `wrapwidth` *(set to 0 for default/no wrap)*
 - `flags` additive flags :
     - `MGUI_CENTER` to center text (internally SetHudSize's `x |= 0.4`)
     - `MGUI_TYPEON` for delayed text typing (internally `HUDMSG_TYPEON`). Specify delay duration as `(MGUI_TYPEON|duration)`
@@ -68,14 +71,16 @@ Change the default text color of subsequent `DrawText()`/`ShowText()` calls, by 
 
 **Example**
 ```
-// This
+// These two blocks display the same result
+
+// Block A
 SetTextColor("g");
 ShowText(1000, "Red text A"
 ShowText(1001, "Red text B"
 SetTextColor("N3");
 ShowText(1002, "Neon Orange text A"
 
-// Displays the same result as this
+// Block B
 ShowText(1000, "\cgRed text A"
 ShowText(1001, "\cgRed text B"
 ShowText(1002, "\c[N3]Neon Orange text A"
@@ -102,6 +107,13 @@ Shorthand for `count` consecutive `Hide()` calls, starting from `hudMessageId`.
 So `HideRange(1000, 3)` is same as `Hide(1000); Hide(1001); Hide(1002);`
 
 ---
+## Cropping
+```
+Crop(160, 120, 16, 16, 320);                        // Enable cropping
+Show(1005, "32x32PIC", 160, 120, 320, 240, 1.0);    // Only the 16x16 bottom right of this sprite will be rendered
+Uncrop();                                           // Disable it
+```
+
 ### `void Crop(int left, int top, int width, int height, int hudWidth)`
 Same as `SetHudClipRect()` : it hides pixels outside of the crop area ; until `Uncrop()` is called
 
@@ -113,18 +125,21 @@ The extra `hudWidth` parameter is required for [anchor](#void-setanchorint-ancho
 Stop previous `Crop()`'s effect
 
 
-**Cropping example**
-```
-Crop(                   160, 120, 16, 16,   320);           // Enable cropping
-Show(1005, "32x32PIC",  160, 120,           320, 240, 1.0); // Only the 16x16 bottom right of this sprite will be rendered
-Uncrop();                                                   // Disable it
-```
-
-
-
 ---
+
+## Anchoring
+
+```
+SetAnchor(MGUI_LEFT);
+Show(1006, "MUGSHOT", 30, 240, 320, 240, 1.0);  // Will be anchored to left side of screen
+SetAnchor(MGUI_RIGHT);
+Show(1006, "WEAPON", 280, 240, 320, 240, 1.0);  // Will be anchored to right side of screen
+ClearAnchor();                                  // Stop anchor's effect
+```
+
+
 ### `void SetAnchor(int anchorValue)`
-Keeps subsequent `Draw()`, `Show()` and `SetMouseArea()` calls at a fixed offset from the screen edge, even if player has a wider game resolution than 4:3.
+Keep subsequent `Draw()`, `Show()` and `SetMouseArea()` calls at a fixed offset from the screen edge, even if player has a wider game resolution than 4:3.
 - `anchorValue = MGUI_LEFT` : offset from left edge
 - `anchorValue = MGUI_RIGHT` : offset from right edge
 
@@ -136,59 +151,86 @@ Stop the effect with `ClearAnchor()`
 Stops `SetAnchor()`'s effect
 
 
-**Anchoring example**
-```
-SetAnchor(MGUI_LEFT);
-Show(1006, "MUGSHOT", 30, 240, 320, 240, 1.0);  // Will be anchored to left side of screen
-SetAnchor(MGUI_RIGHT);
-Show(1006, "WEAPON", 280, 240, 320, 240, 1.0);  // Will be anchored to right side of screen
-ClearAnchor();                                  // Stop anchor's effect
-```
-
-
-
 
 ---
 
 
 
 # Mouse menu
-### `bool StartMouseMenu(str scriptName)`
-Enables mouse menu. It will send mouse events to the given `scriptName` callback script with the arguments `(int e, int areaId)` :
 
-- `e` event type, either
-    - `MGUI_EVENT_ENTER`    on mouse entering an area
-    - `MGUI_EVENT_EXIT`     on mouse exiting an area
-    - `MGUI_EVENT_DOWN`     on fire button press
-    - `MGUI_EVENT_UP`       on fire button release
-    - `MGUI_EVENT_ALT_DOWN` on altfire button press
-    - `MGUI_EVENT_ALT_UP`   on altfire button release
-- `areaId` the mouse area id that triggered it
-    - For fire/altfire button actions, if no area is hovered, `areaId`'s value will be `MGUI_NULL_AREA`
+General workflow:
+1) Use `StartMouseMenu()` to enable the mouse menu and display the cursor
+2) Register interactive 2D rectangles ("mouse areas") with `SetMouseArea()`
+3) Add or remove event handlers with `AddMouseEnter()`, `AddMouseExit()`, `AddMouseDown()`, etc.
+4) Use `EndMouseMenu()` to disable the mouse menu
 
-The function returns `false` if it could not start due to another mod already using the mouse menu, or if the callback script does not exist.
+## Mouse menu example
+
+```
+script "Mouse Menu Example" (void) CLIENTSIDE {
+    int x =             160, 
+        y =             120, 
+        hudWidth =      320, 
+        hudHeight =     240;
+
+    StartMouseMenu();
+
+    // Render a 32x32 mugshot ; register an interactable mouse area on it
+    Show(1000, "FACE1", x, y, hudWidth, hudHeight, 1.0);     
+    SetMouseArea(50, x, y, hudWidth, hudHeight, 32, 32);  
+
+    // Let's add "on mouse hover"/"on mouse left click" event handlers on that mouse area
+    AddMouseEnter(50, "Mouse Menu On Enter");
+    AddMouseDown(50, "Mouse Menu On Click");
+
+    // Let's add "on any right click on the screen" event handler
+    AddMouseAltDown(MGUI_SCREEN_AREA, "Mouse Menu On Right Click");
+}
+
+script "Mouse Menu On Enter" (int areaId, int e) CLIENTSIDE {
+    Log(s:"Mouse entered areaId = ", d:areaId); // areaId == 50
+}
+
+script "Mouse Menu On Click" (int areaId, int e) CLIENTSIDE {
+    Log(s:"Mouse left clicked on areaId = ", d:areaId); // areaId == 50
+}
+
+script "Mouse Menu On Right Click" (int areaId, int e) CLIENTSIDE {
+    Log(s:"Mouse has right clicked ; ending mouse menu");
+    EndMouseMenu();
+    Hide(1000);
+}
+```
+
+---
+
+### `bool StartMouseMenu(void)`
+Enables the mouse menu, and start displaying the cursor.
+
+Returns `false` if could not start due to another mod already using the mouse menu.
 
 ---
 
 ### `void EndMouseMenu()`
-Stops the ongoing mouse menu
+Stops the running mouse menu.
 
 ---
 
 ### `void SetMouseArea(int areaId, int x, int y, int hudWidth, int hudHeight, int width, int height)`
-Registers an area that sends mouse events. 
+Registers (or update) a mouse area's bounding box with id `areaId`.
 
-- `width`/`height` is the area's dimensions, as if it was a graphic file.
-- `areaId` must be >= 0
-- When the mouse is within several areas, only the one with lowest `areaId` will trigger events (similar to hudMessage id priority) 
+- `areaId` must be 0 <= areaId <= 2,147,483,646
+- `width`/`height` is the area's dimensions, as if it was a graphic file
+- If overlapping areas share the same [event](#mouse-menu-events) type, the mouse will interact with the one having the lower `areaId` value.
 
 --- 
-### `int GetMouseArea(void)`
-Returns the currently hovered mouse areaId, or `MGUI_NULL_AREA` if none
+### `bool CheckMouseArea(int areaId)`
+Returns `true` if the mouse is currently hovering over `areaId`.
+
 
 --- 
 ### `void DeleteMouseArea(int areaId)`
-Unregisters a `SetMouseArea()` defined area
+Unregisters a `SetMouseArea()` defined area and all its [events](#mouse-menu-events).
 
 ---
 ### `void DeleteMouseAreaRange(int areaId, int count)`
@@ -197,58 +239,115 @@ Shorthand for `count` consecutive `DeleteMouseArea()` calls, starting from `area
 So `DeleteMouseAreaRange(0, 3)` is same as `DeleteMouseArea(0); DeleteMouseArea(1); DeleteMouseArea(2);`
 
 
-**Simple mouse setup example**
+---
+
+## Mouse menu events
 
 ```
-script "Mouse Test" (void) CLIENTSIDE {
+script "Various event handling styles" (void) CLIENTSIDE {
+    SetMouseArea(51, 40, 120, 320, 240, 32, 32);
+    SetMouseArea(52, 80, 120, 320, 240, 32, 32);
+    SetMouseArea(53, 120, 120, 320, 240, 32, 32);
 
-    // Enable mouse menu mode. Receive mouse events in the given script
-    StartMouseMenu("Mouse Test Callback");          
+    // Area 51, Enter event : 1 script
+    AddMouseEnter(51, "On Area 51 Enter");
 
-    int x = 50, y = 45, hudWidth = 174, hudHeight = 131;
+    // Any area, Exit event : 1 script
+    AddMouseExit(51, "On Any Area Exit");
+    AddMouseExit(52, "On Any Area Exit");
+    AddMouseExit(53, "On Any Area Exit");
 
-    // Render some 32x32 mugshot
-    Show(1000, "FACE1", x, y, hudWidth, hudHeight, 1.0);     
-
-    // Register a 32x32px area centered on mugshot's position (effectively covering the mugshot's surface) that will send mouse events
-    SetMouseArea(1000,  x, y, hudWidth, hudHeight, 32, 32);  
+    // Area 52, Down + AltDown event : 1 script
+    AddMouseDown(52, "On Area 52 Any Click");
+    AddMouseAltDown(52, "On Area 52 Any Click");
 }
 
-// Mouse events handler
-script "Mouse Test Callback" (int e, int areaId) CLIENTSIDE {
-    switch(e) {
+script "On Area 51 Enter" (void) {
+    Log(s:"Area 51 with event type MGUI_EVENT_ENTER triggered");
+}
 
-        case MGUI_EVENT_ENTER:
-            log(s:"Mouse entered area ", d:areaId, s:" !!");
-            break;
+script "On Any Area Exit" (int areaId) {
+    Log(s:"Area ", d:areaId, s:" with event type MGUI_EVENT_EXIT triggered");
+}
 
-        case MGUI_EVENT_EXIT:
-            log(s:"Mouse exited area ", d:areaId, s:" !!");
-            break;
-
-        case MGUI_EVENT_DOWN:
-            // Only proceed if clicked on a registered area
-            if(areaId == MGUI_NULL_AREA)
-                terminate;
-            else 
-                log(s:"Left clicked on area ", d:areaId, s:" !!");
-            break;
-        
-        // Proceed on right click, whether or not an area was clicked
-        case MGUI_EVENT_ALT_DOWN:
-            // Interrupt the mouse menu
-            log(s:"Right clicked! Ending mouse menu.");
-            EndMouseMenu();
-            Hide(1000);
-            break;
-    }
+script "On Area 52 Any Click" (int areaId, int e) {
+    if(e == MGUI_EVENT_DOWN)
+        Log(s:"Area 52 with event type MGUI_EVENT_DOWN triggered");
+    else if(e == MGUI_EVENT_ALT_DOWN)
+        Log(s:"Area 52 with event type MGUI_EVENT_ALT_DOWN triggered");
 }
 ```
 
+### `void AddMouseEnter(int areaId, int scriptName)`
+### `void AddMouseExit(int areaId, int scriptName)`
+### `void AddMouseDown(int areaId, int scriptName)`
+### `void AddMouseUp(int areaId, int scriptName)`
+### `void AddMouseAltDown(int areaId, int scriptName)`
+### `void AddMouseAltUp(int areaId, int scriptName)`
 
+Sets `areaId`'s event handler script to `scriptName`.
+- The event handler script's received arguments are  `int areaId, int e` :
+    - `areaId` : the mouse area that triggered the event
+    - `e` : event type as per the below table.
 
+| Method | Role | `e` value |
+| - | - | - |
+| `AddMouseEnter()` | Mouse enters area | `MGUI_EVENT_ENTER` |
+| `AddMouseExit()` | Mouse leaves area | `MGUI_EVENT_EXIT` |
+| `AddMouseDown()` | Mouse left (mainfire) button press on area | `MGUI_EVENT_DOWN` |
+| `AddMouseUp()` | Mouse left (mainfire) button release on area | `MGUI_EVENT_UP` |
+| `AddMouseAltDown()` | Mouse right (altfire) button press on area | `MGUI_EVENT_ALT_DOWN` |
+| `AddMouseAltUp()` | Mouse right (altfire) button release on area | `MGUI_EVENT_ALT_UP` |
+
+- To set a event handler script to the entire screen area, you can use the special `areaId` value `MGUI_SCREEN_AREA`.
+
+--- 
+
+### `void AddAllMouseEvents(int areaId, int scriptName)`
+A shorthand for calling the six previous `AddMouse` functions.
 
 ---
+
+### `void RemoveMouseEnter(int areaId)`
+### `void RemoveMouseExit(int areaId)`
+### `void RemoveMouseDown(int areaId)`
+### `void RemoveMouseUp(int areaId)`
+### `void RemoveMouseAltDown(int areaId)`
+### `void RemoveMouseAltUp(int areaId)`
+
+Remove the event handler script from `areaId` (if it has one).
+
+**Example**
+```
+// This mouse menu reacts when alternating left and right clicks (anywhere on screen, using MGUI_SCREEN_AREA)
+script "Alternate clicks" (void) CLIENTSIDE {
+    StartMouseMenu();
+    AddMouseDown(MGUI_SCREEN_AREA, "On left click");
+}
+
+script "On left click" (void) {
+    Log(s:"You left clicked");
+    RemoveMouseDown(MGUI_SCREEN_AREA);
+    AddMouseAltDown(MGUI_SCREEN_AREA, "On right click");
+}
+
+script "On right click" (void) {
+    Log(s:"You right clicked");
+    RemoveMouseAltDown(MGUI_SCREEN_AREA);
+    AddMouseDown(MGUI_SCREEN_AREA, "On left click");
+}
+```
+
+---
+
+### `void RemoveAllMouseEvents(int areaId, int scriptName)`
+A shorthand for calling the six previous `RemoveMouse` functions.
+
+---
+
+
+
+## Mouse menu misc
 
 ### `void SetMouseSpeed(int speed)`
 Change mouse speed multiplier (default 1.0)
@@ -256,11 +355,10 @@ Change mouse speed multiplier (default 1.0)
 ---
 
 ### `void SetCustomMouse(str graphic, int offsetX, int offsetY, int hudWidth, int hudHeight)`
-Customizes the mouse cursor. Particular parameters :
-
+Customizes the mouse cursor.
 
 - `graphic` the mouse graphic
-- `offsetX` and `offsetY` position offset. If 0 and 0, `graphic` will be drawn centered on mouse's position
+- `offsetX` and `offsetY` position offset
 
 **Examples**
 
@@ -287,7 +385,7 @@ SetMouseY(0.5);
 
 // Classic use case : render something on mouse's position
 int hudWidth = 320, hudHeight = 240;
-Draw("ITEM", (GetMouseX() * hudWidth) >> 16, (GetMouseY() * hudHeight) >> 16, hudWidth, hudHeight, 1.0);
+Draw("SOMETHNG", (GetMouseX() * hudWidth) >> 16, (GetMouseY() * hudHeight) >> 16, hudWidth, hudHeight, 1.0);
 ```
 
 --- 

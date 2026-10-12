@@ -62,7 +62,7 @@ It effectively makes better use of screen space on resolutions wider than 4:3.
 
 You can enable a **mouse-controllable cursor on screen**.
 
-While enabled, the cursor will send **mouse hover/exit/click** events when interacting with an area of the screen you registered.
+You can then register 2D areas on screen to receive **mouse hover/exit/click** events in a event handler script.
 
 How does your UI react is up for your mod to implement. MegaUI only handles mouse control and send mouse events. 
 

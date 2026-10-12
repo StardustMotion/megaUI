@@ -5,15 +5,9 @@
 /*  
         [ Dance dance revolution game ]
 
-    > Mouse area ids are given #DEFINE names for easier management. They're either
-        - The 4 grey arrows
-            - Highlighted on mouse hover
-            - React/consume the beat on click
-        - The right menu items
-            - Turn to big font on hover
-            - Control game state on click
     > 3 songs
-    > Use Draw() for the notes (since they change position every frame) ; and Show() for everything else
+    > To demonstrate a different style of event handling, callback scripts on this minigame receive multiple type of events ;
+        then filtering by event in the script (instead of 1 script per areaId and per event type, like on other minigames).
 */
 
 
@@ -34,22 +28,22 @@
 #DEFINE DDR_BPM_150         7
 
 // Mouse area ids
-#DEFINE AREAID_ARROWS               0                               // [0, DDR_INPUT_COUNT = 4[
-#DEFINE AREAID_MENU_START           AREAID_ARROWS           +DDR_INPUT_COUNT
-    #DEFINE AREAID_MENU_STOP        AREAID_MENU_START
-    #DEFINE AREAID_MENU_TRACKS      AREAID_MENU_STOP        +1
-    #DEFINE AREAID_MENU_METRONOM    AREAID_MENU_TRACKS      +DDR_TRACK_COUNT
-    #DEFINE AREAID_MENU_EXIT        AREAID_MENU_METRONOM    +1
-#DEFINE AREAID_MENU_END             AREAID_MENU_EXIT        +1
+#DEFINE AREAID_MENU_END             100                     
+    #DEFINE AREAID_MENU_EXIT        AREAID_MENU_END         -1
+    #DEFINE AREAID_MENU_METRONOM    AREAID_MENU_EXIT        -1
+    #DEFINE AREAID_MENU_TRACKS      AREAID_MENU_METRONOM    -DDR_TRACK_COUNT
+    #DEFINE AREAID_MENU_STOP        AREAID_MENU_TRACKS      -1
+#DEFINE AREAID_MENU_START           AREAID_MENU_STOP
+#DEFINE AREAID_ARROWS               AREAID_MENU_START       -DDR_INPUT_COUNT
 
 // HudMessageIds
-#DEFINE DRAWID_DDR_TITLE            2000
-#DEFINE DRAWID_DDR_JUDGMENT         DRAWID_DDR_TITLE +1
-#DEFINE DRAWID_DDR_COMBO            DRAWID_DDR_JUDGMENT +1
-#DEFINE DRAWID_DDR_ARROWS           DRAWID_DDR_COMBO+1
-#DEFINE DRAWID_DDR_ARROW_HIGHLIGHT  DRAWID_DDR_ARROWS +DDR_INPUT_COUNT
-#DEFINE DRAWID_DDR_MENU             DRAWID_DDR_ARROW_HIGHLIGHT +DDR_INPUT_COUNT
-#DEFINE DRAWID_DDR_BG               DRAWID_DDR_MENU +(AREAID_MENU_END-AREAID_MENU_START)
+#DEFINE DRAWID_DDR_BG               4000                        -1
+#DEFINE DRAWID_DDR_MENU             DRAWID_DDR_BG               -(AREAID_MENU_END-AREAID_MENU_START)
+#DEFINE DRAWID_DDR_ARROW_HIGHLIGHT  DRAWID_DDR_MENU             -DDR_INPUT_COUNT
+#DEFINE DRAWID_DDR_ARROWS           DRAWID_DDR_ARROW_HIGHLIGHT  -DDR_INPUT_COUNT
+#DEFINE DRAWID_DDR_COMBO            DRAWID_DDR_ARROWS           -1
+#DEFINE DRAWID_DDR_JUDGMENT         DRAWID_DDR_COMBO            -1
+#DEFINE DRAWID_DDR_TITLE            DRAWID_DDR_JUDGMENT         -1
 
 // Grey arrow click bounce animation 
 #DEFINE DDR_ARROW_ANIM_T    5  // Duration
@@ -179,13 +173,11 @@ int ddrCombo;
 
 script "MegaUI DDR" (void) CLIENTSIDE {
 
-	// Start the mouse menu / receive callback events in given script
     if(!StartMouseMenu())
         terminate;
 
 	SetPlayerProperty(0, true, PROP_TOTALLYFROZEN);
 
-	MGUIGames_DebugMessage(true);
 
     // Fade background
     for(int i = 0; i <= 20; i++) {
@@ -194,13 +186,20 @@ script "MegaUI DDR" (void) CLIENTSIDE {
     }
 
     // Grey arrow area setup
-    for(i = 0; i < DDR_INPUT_COUNT; i++)
-        SetMouseArea(i, GetArrowX(i), 138, 984, 738, 104, 104);
+    for(int areaId = 0; areaId < DDR_INPUT_COUNT; areaId++) {
+        SetMouseArea(areaId, GetArrowX(areaId), 138, 984, 738, 104, 104);
+        // Receive enter/exit/click events, all 3 on the same script
+        AddMouseEnter(areaId, "MegaUI DDR On Arrow Event");
+        AddMouseExit(areaId, "MegaUI DDR On Arrow Event");
+        AddMouseDown(areaId, "MegaUI DDR On Arrow Event");
+    }
 
     // Right menu display / area setup
-    for(int areaId = AREAID_MENU_START; areaId < AREAID_MENU_END; areaId++) {
+    for(areaId = AREAID_MENU_START; areaId < AREAID_MENU_END; areaId++) {
         UpdateDDRMenu(areaId, false);
         SetMouseArea(areaId, 245, GetDDRMenuY(areaId), 320, 170, 66, 16);
+        // Receive all event types on the same script
+        AddAllMouseEvents(areaId, "MegaUI DDR On Menu Event");
     }
 
     for(i = 0; i < DDR_INPUT_COUNT; i++) 
@@ -420,6 +419,7 @@ function void CalcDDRBeats(void) {
         int normalizedDistance = FixedDiv((ddrTimerBuffer[i]-t)<<16, DDR_NOTE_DURATION<<16);
         int yPos = DDR_NOTE_START_Y - (FixedMul(DDR_TOTAL_Y_DISTANCE, 1.0-normalizedDistance)>>16);
         int note = ddrNoteBuffer[i];
+        // Rendered with Draw() instead of Show() because their position update every tic anyway
         Draw(ddrArrowBeatPic[ddrBeatBuffer[i]][note], GetArrowX(note), yPos, 984, 738, 1.0);
     }
 }
@@ -444,123 +444,11 @@ function void ShiftDDRBeat(int accuracy) {
     Show(DRAWID_DDR_JUDGMENT, ddrJudgment, 178, 259, 619, 464, 1.0);
     ddrJudgmentDuration = DDR_JUDGMENT_BASE_DURATION;
     if(ddrCombo > 2)
-        ShowText(DRAWID_DDR_COMBO, StrParam(d:ddrCombo, s:" combo"), "bigfont", 117, 199, 412, 309, 0, 1.0, 0);
+        ShowText(DRAWID_DDR_COMBO, StrParam(s:"\cc", d:ddrCombo, s:" combo"), "bigfont", 117, 199, 412, 309, 0, 1.0, 0);
     else
         Hide(DRAWID_DDR_COMBO);
 }
 
-
-
-// ------------------------------------------------------------------------------------------------------
-//        Mouse area events
-// ------------------------------------------------------------------------------------------------------
-
-script "MegaUI DDR Callback" (int e, int areaId) {
-    switch(e) {
-        
-		// On hover area
-		case MGUI_EVENT_ENTER:
-
-            // Right menu enter
-            if(areaId >= AREAID_MENU_START)
-                UpdateDDRMenu(areaId, true);
-
-            // Grey arrow enter
-            else 
-                SetArrowHighlight(areaId, true);
-
-			break;
-
-		// On exit area
-		case MGUI_EVENT_EXIT:
-
-            // Right menu exit
-            if(areaId >= AREAID_MENU_START) 
-                UpdateDDRMenu(areaId, false);
-
-            // Grey arrow exit
-            else
-                SetArrowHighlight(areaId, false);
-
-			break;
-
-        // On fire press
-        case MGUI_EVENT_DOWN:
-
-            // If clicked into [no area], do nothing
-            if(areaId == MGUI_NULL_AREA) 
-                terminate;
-
-            // Right menu click
-            if(areaId >= AREAID_MENU_START)
-                OnDDRMenuClick(areaId);
-
-            // Grey arrow click
-            else 
-                OnArrowClick(areaId);
-            break;
-
-		// On altfire press
-		case MGUI_EVENT_ALT_DOWN:
-			MGUI_SetDebug(true);
-			break;
-
-		// On altfire release
-		case MGUI_EVENT_ALT_UP:
-			MGUI_SetDebug(false);
-			break;
-        
-    }
-}
-
-function void OnDDRMenuClick(int areaId) {
-
-    // Stop button
-    if(areaId == AREAID_MENU_STOP) {
-        if(ddrTrack==-1) // Already stopped, ignore the click
-            return;
-        SetDDRTrack(-1);
-    }
-
-    // Metronom button
-    else if(areaId == AREAID_MENU_METRONOM) {
-        useMetronom = !useMetronom;
-        LocalAmbientSound("MEGAUIG0", 127);
-        UpdateDDRMenu(AREAID_MENU_METRONOM, true);
-    }
-    
-    // Exit game nutton
-    else if(areaId == AREAID_MENU_EXIT) {
-        ddrTrack = -1;
-        SetMusic("*");
-        // Hide every hudMessageIds of DDR
-        HideRange(DRAWID_DDR_TITLE, (DRAWID_DDR_BG+1-DRAWID_DDR_TITLE));
-        LocalAmbientSound("MEGAUIG2", 127);
-        EndMouseMenu();
-        SetPlayerProperty(0, false, PROP_TOTALLYFROZEN);
-        MGUIGames_DebugMessage(false);
-    }
-
-    // Any track's button
-    else
-        SetDDRTrack(areaId-AREAID_MENU_TRACKS);
-}
-
-function void OnArrowClick(int index) {
-    ddrPress[index] = DDR_ARROW_ANIM_T; // Refresh bouncy animation
-    if(ddrTrack == -1) // Not playing a track
-        return;
-    int note = ddrNoteBuffer[0];
-    if(note == -1) // No note buffered yet
-        return;
-    else if(index == note) { // If matches clicked arrow's type (left down etc), resolve timing
-        int timing = (ddrTimerBuffer[0]-Timer())-DDR_ACCURACY_MISS;
-        if(timing < 0) timing = -timing;
-        if(timing <= DDR_ACCURACY_PERFECT)      ShiftDDRBeat(DDR_ACCURACY_PERFECT);
-        else if(timing <= DDR_ACCURACY_GREAT)   ShiftDDRBeat(DDR_ACCURACY_GREAT);
-        else if(timing <= DDR_ACCURACY_GOOD)    ShiftDDRBeat(DDR_ACCURACY_GOOD);
-    }
-}
 
 // Display grey arrow background highlight on hover
 function void SetArrowHighlight(int index, bool state) {
@@ -568,4 +456,92 @@ function void SetArrowHighlight(int index, bool state) {
         Show(DRAWID_DDR_ARROW_HIGHLIGHT+index, "MEGAUIGE", GetArrowX(index), 139, 984, 738, 0.4);
     else
         Hide(DRAWID_DDR_ARROW_HIGHLIGHT+index);
+}
+
+
+
+						// ########################################## //
+						// ----------------- EVENTS ----------------- //
+						// ########################################## //
+
+
+// Handles right menu's enter/exit/click events
+script "MegaUI DDR On Menu Event" (int areaId, int e) {
+    switch(e) {
+
+        // On hover : font turns big
+        case MGUI_EVENT_ENTER:
+            UpdateDDRMenu(areaId, true);
+            break;
+
+        // On exits : font turns small
+        case MGUI_EVENT_EXIT:
+            UpdateDDRMenu(areaId, false);
+            break;
+
+        // On click : control game state
+        case MGUI_EVENT_DOWN:
+            // Stop button
+            if(areaId == AREAID_MENU_STOP) {
+                if(ddrTrack==-1) // Already stopped, ignore the click
+                    terminate;
+                SetDDRTrack(-1);
+            }
+
+            // Metronom button
+            else if(areaId == AREAID_MENU_METRONOM) {
+                useMetronom = !useMetronom;
+                LocalAmbientSound("MEGAUIG0", 127);
+                UpdateDDRMenu(AREAID_MENU_METRONOM, true);
+            }
+            
+            // Exit game nutton
+            else if(areaId == AREAID_MENU_EXIT) {
+                ddrTrack = -1;
+                SetMusic("*");
+                // Hide every hudMessageIds of DDR
+                HideRange(DRAWID_DDR_TITLE, (DRAWID_DDR_BG+1-DRAWID_DDR_TITLE));
+                LocalAmbientSound("MEGAUIG2", 127);
+                EndMouseMenu();
+                SetPlayerProperty(0, false, PROP_TOTALLYFROZEN);
+            }
+
+            // Any track's button
+            else
+                SetDDRTrack(areaId-AREAID_MENU_TRACKS);
+            break;
+    }
+}
+
+// Handles arrows's enter/exit/click events
+script "MegaUI DDR On Arrow Event" (int areaId, int e) {
+    switch(e) {
+
+        // On hover : highlight
+        case MGUI_EVENT_ENTER:
+            SetArrowHighlight(areaId, true);
+            break;
+
+        // On exit : remove highlight
+        case MGUI_EVENT_EXIT:
+            SetArrowHighlight(areaId, false);
+            break;
+
+        // On click : compute beat timing
+        case MGUI_EVENT_DOWN:
+            ddrPress[areaId] = DDR_ARROW_ANIM_T; // Refresh bouncy animation
+            if(ddrTrack == -1) // Not playing a track
+                terminate;
+            int note = ddrNoteBuffer[0];
+            if(note == -1) // No note buffered yet
+                terminate;
+            else if(areaId == note) { // If matches clicked arrow's type (left down etc), resolve timing
+                int timing = (ddrTimerBuffer[0]-Timer())-DDR_ACCURACY_MISS;
+                if(timing < 0) timing = -timing;
+                if(timing <= DDR_ACCURACY_PERFECT)      ShiftDDRBeat(DDR_ACCURACY_PERFECT);
+                else if(timing <= DDR_ACCURACY_GREAT)   ShiftDDRBeat(DDR_ACCURACY_GREAT);
+                else if(timing <= DDR_ACCURACY_GOOD)    ShiftDDRBeat(DDR_ACCURACY_GOOD);
+            }
+            break;
+    }
 }

@@ -123,7 +123,7 @@ MGUI_EDITOR_STAMP_MOUSE_AREA =
     "\c[q7]=> Reset settings\n"
 
     "\c[i0][ Jump ]\n"
-    "\c[q7]=> Size\n"
+    "\c[q7]=> Dimensions\n"
     ;
 
 
@@ -152,7 +152,7 @@ MGUI_EDITOR_WRAP =
     ;
 
 MGUI_EDITOR_SIZE =
-    "\c[i0][ Mouse (horizontal) ]\n"
+    "\c[i0][ Mouse ]\n"
     "\c[q7]=> Resize\n"
 
     "\c[i0][ Move keys ]\n"

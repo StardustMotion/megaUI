@@ -13,24 +13,20 @@
 
 #DEFINE WINDOWS_MAX     16
 
-#DEFINE DRAWID_WINDOWS_TITLE    2000
-#DEFINE DRAWID_WINDOWS_START    DRAWID_WINDOWS_TITLE +1
-#DEFINE DRAWID_WINDOWS_END      DRAWID_WINDOWS_START + WINDOWS_MAX
+// HudMessageIds
+#DEFINE DRAWID_WINDOWS_END      4000                    
+#DEFINE DRAWID_WINDOWS_START    DRAWID_WINDOWS_END      -WINDOWS_MAX
+#DEFINE DRAWID_WINDOWS_TITLE    DRAWID_WINDOWS_START    -1
 
 int windowAreaIdCount = 0;
 
 script "MegaUI Windows" (void) CLIENTSIDE {
 
-	// Start the mouse menu / receive callback events in given script
+    // Start mouse menu
     if(!StartMouseMenu())
         terminate;
 
 	SetPlayerProperty(0, true, PROP_TOTALLYFROZEN);
-
-	MGUIGames_DebugMessage(true);
-    // Hold right click anywhere to enable MegaUI debug
-	AddMouseAltDown(MGUI_NULL_AREA, MEGAUI_DEBUG_SCRIPT_CALLBACK);
-	AddMouseAltUp(MGUI_NULL_AREA, MEGAUI_DEBUG_SCRIPT_CALLBACK);
 
     LocalAmbientSound("MEGAUIG5", 127);
     SetWindowCursor(false);
@@ -39,6 +35,7 @@ script "MegaUI Windows" (void) CLIENTSIDE {
         AddWindow(); 
         delay(4); 
     }
+
     // Make topmost window interactable
     EnableWindowEvents(windowAreaIdCount);
     while(true) {
@@ -50,8 +47,8 @@ script "MegaUI Windows" (void) CLIENTSIDE {
                 Hide(DRAWID_WINDOWS_TITLE);
                 delay(10);
                 LocalAmbientSound("MEGAUIG5", 127);
-                MGUIGames_DebugMessage(false);
                 ShowText(DRAWID_WINDOWS_TITLE, "\cfV I C T O R Y", "bigfont", 160, 29, 320, 240, 0, 1.0, MGUI_TYPEON|0.04);
+                // Stop the mouse menu
                 EndMouseMenu();
                 SetCustomMouse("DOOMCURS", 7, 14, 320, 240);
                 delay(50);
@@ -60,7 +57,7 @@ script "MegaUI Windows" (void) CLIENTSIDE {
                 terminate;
             }
         }
-        // Spawn window : disable the (topmost-1) window interaction, enable the topmost one's interaction
+        // On window spawn ; disable the (topmost-1) window, and enable the topmost one
         if(windowAreaIdCount < WINDOWS_MAX) {
             AddWindow();
             DisableWindowEvents(windowAreaIdCount-1);
@@ -80,10 +77,7 @@ function void AddWindow(void) {
     int hudMessageId = DRAWID_WINDOWS_END-windowAreaIdCount,
         x = random(280, 520),
         y = random(230, 420);
-    // Window graphic ~ Id 2016 => 2015 => 2014...
     Show(hudMessageId, "megauig5", x, y, WINDOWS_HUD_WIDTH, WINDOWS_HUD_HEIGHT, 1.0); 
-
-    // Close button : areaId 1 => 2 => 3...
     SetMouseArea(windowAreaIdCount, x+219, y-152, WINDOWS_HUD_WIDTH, WINDOWS_HUD_HEIGHT, 36, 36); 
     RefreshWindowTitle();
 }
@@ -102,35 +96,21 @@ function void SetWindowCursor(bool isHover) {
 }
 
 
-    // ########################################## //
-    // ----------------- EVENTS ----------------- //
-    // ########################################## //
+						// ########################################## //
+						// ----------------- EVENTS ----------------- //
+						// ########################################## //
 
-// Make a window interactable
-function void EnableWindowEvents(int areaId) {
-    AddMouseEnter(areaId, "MegaUI Windows On Enter");
-    AddMouseExit(areaId, "MegaUI Windows On Exit");
-    AddMouseDown(areaId, "MegaUI Windows On Click");
-}
-
-// Make a window non-interactable
-function void DisableWindowEvents(int areaId) {
-    RemoveMouseEnter(areaId);
-    RemoveMouseExit(areaId);
-    RemoveMouseDown(areaId);
-}
-
-// On hovering topmost window mouse area- turn mouse cursor into a finger
+// On topmost window hover (turn cursor into a finger)
 script "MegaUI Windows On Enter" (void) {
 	SetWindowCursor(true);
 }
 
-// On exit mouse area area - revert mouse cursor to a pointer
+// On topmost window exit (turn cursor back to a pointer)
 script "MegaUI Windows On Exit" (void) {
 	SetWindowCursor(false);
 }
 
-// On fire press on a window's [X]
+// On topmost window click on [X] button
 script "MegaUI Windows On Click" (int areaId) {
     DeleteMouseArea(areaId); // Delete the mouse area and all its events
     Hide(DRAWID_WINDOWS_END-windowAreaIdCount);
@@ -139,7 +119,24 @@ script "MegaUI Windows On Click" (int areaId) {
     LocalAmbientSound("MEGAUIG6", 127);
     SetWindowCursor(false);
 
-    // Next underneath window becomes interactable
+    // Enable interaction on the next underneath window
     if(windowAreaIdCount > 0)
         EnableWindowEvents(windowAreaIdCount);
+}
+
+    // ----------------- Handlers operations ----------------- //
+
+// Make window interactable
+function void EnableWindowEvents(int areaId) {
+    AddMouseEnter(areaId, "MegaUI Windows On Enter");
+    AddMouseExit(areaId, "MegaUI Windows On Exit");
+    AddMouseDown(areaId, "MegaUI Windows On Click");
+}
+
+// Make window non-interactable
+function void DisableWindowEvents(int areaId) {
+    // Could use RemoveAllMouseEvents(areaId); as shorthand
+    RemoveMouseEnter(areaId);
+    RemoveMouseExit(areaId);
+    RemoveMouseDown(areaId);
 }
