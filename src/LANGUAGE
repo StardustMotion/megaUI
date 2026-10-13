@@ -9,9 +9,12 @@ MGUI_EDITOR_OPEN =
     "\c[r7]      ===================================\n"
     "\n"
     "\c[p6]> Type some text or a graphic file name in chat to start painting\n"
+    "\c[p6]   - Can prefix \c[j5]$\c[p6] to evaluate as a LANGUAGE lump entry, i.e \c[j5]$QUITMSG\c[p6]\n"
+    "\n"
     "\c[p6]> Type \c[j5]megabuild\c[p6] in console to generate ACS\n"
     "\c[p6]   - To write it to disk, use \c[j5]logfile\c[p6] command, i.e :\n"
     "\c[j5]   - logfile out \c[p6]=> \c[j5]megabuild \c[p6]=> \c[j5]logfile\n"
+    "\n"
     "\c[p6]> Type \c[j5]megahelp\c[p6] in console to show/hide the help on screen\n"
     "\n"
     "\c[r7]      ==================================="
@@ -120,7 +123,7 @@ MGUI_EDITOR_STAMP_MOUSE_AREA =
     "\c[q7]=> Reset settings\n"
 
     "\c[i0][ Jump ]\n"
-    "\c[q7]=> Size\n"
+    "\c[q7]=> Dimensions\n"
     ;
 
 
@@ -149,7 +152,7 @@ MGUI_EDITOR_WRAP =
     ;
 
 MGUI_EDITOR_SIZE =
-    "\c[i0][ Mouse (horizontal) ]\n"
+    "\c[i0][ Mouse ]\n"
     "\c[q7]=> Resize\n"
 
     "\c[i0][ Move keys ]\n"

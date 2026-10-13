@@ -6,96 +6,6 @@
 // Mouse menu callback script
 script "MegaUI Editor Event" (int e, int areaId) CLIENTSIDE {
     switch(e) {
-
-        // Mouse enters area
-        case MGUI_EVENT_ENTER:
-            if(areaId == MGUI_EDITOR_INSPECTOR_DRAWID)
-                MGUIEditor_SetInspectorPosition(mguiInspectorPosition == MGUI_INSPECTOR_BOTTOM ? MGUI_INSPECTOR_TOP : MGUI_INSPECTOR_BOTTOM);
-            else if(mguiEditorMode==MGUI_EDITOR_MODE_SELECT)
-                MGUIEditor_DrawStampHook(areaId, MGUI_EDITOR_HOOK_FOCUSED);
-            break;
-
-        // Mouse exits area
-        case MGUI_EVENT_EXIT:
-            if(mguiEditorMode==MGUI_EDITOR_MODE_SELECT)
-                MGUIEditor_DrawStampHook(areaId, MGUI_EDITOR_HOOK_IDLE);
-            break;
-
-        // Left click down
-        case MGUI_EVENT_DOWN:
-            switch(mguiEditorMode) {
-
-                // Pick up stamp 
-                case MGUI_EDITOR_MODE_SELECT:
-                    if(areaId != MGUI_NULL_AREA) {
-                        int slot = MGUIEditor_GetSlotFromStampId(areaId);
-                        mguiEditorMouseType =       mguiEditorStampType[slot],
-                        mguiEditorMouseContent =    mguiEditorStampContent[slot],
-                        mguiEditorMouseFont =       mguiEditorStampFont[slot],
-                        mguiEditorMouseXFactor =    mguiEditorStampXFactor[slot],
-                        mguiEditorMouseYFactor =    mguiEditorStampYFactor[slot],
-                        mguiEditorMouseWrap =       mguiEditorStampWrap[slot],
-                        mguiEditorMouseAlpha =      mguiEditorStampAlpha[slot],
-                        mguiEditorMouseSizeX =      mguiEditorStampSizeX[slot],
-                        mguiEditorMouseSizeY =      mguiEditorStampSizeY[slot];
-                        SetMouseX(mguiEditorStampX[slot]);
-                        SetMouseY(mguiEditorStampY[slot]);
-                        MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_MOVE, true);
-                        MGUIEditor_SetHookRendering(false);
-                        MGUIEditor_Play(MGUI_SFX_SELECT);
-                        MGUIEditor_DeleteStamp(areaId);
-                    }
-                    break;
-
-                // Put stamp on canvas
-                case MGUI_EDITOR_MODE_BRUSH_MOVE:
-                    if(mguiEditorStampCount == MGUI_EDITOR_STAMP_MAX) {
-                        MGUIEditor_Log(StrParam(s:"[ Error ] The ", d:MGUI_EDITOR_STAMP_MAX, s:" stamp limit is reached!!"));
-                        MGUIEditor_Play(MGUI_SFX_ERROR);
-                    }
-                    else {
-                        MGUIEditor_SetStamp(mguiEditorStampCount, 
-                            mguiEditorMouseType, 
-                            mguiEditorMouseContent, 
-                            mguiEditorMouseFont, 
-                            GetMouseX(), GetMouseY(), 
-                            mguiEditorMouseXFactor, mguiEditorMouseYFactor, 
-                            mguiEditorMouseWrap, 
-                            mguiEditorMouseAlpha, 
-                            mguiEditorMouseSizeX, mguiEditorMouseSizeY);
-                        mguiEditorStampCount++;
-                        MGUIEditor_Play(MGUI_SFX_CONFIRM);
-                    }
-                    MGUIEditor_SetMode(MGUI_EDITOR_MODE_SELECT, true);
-                    break;
-            }
-            break;
-
-        // Right click down
-        case MGUI_EVENT_ALT_DOWN:
-            switch(mguiEditorMode) {
-
-                // Delete stamp
-                case MGUI_EDITOR_MODE_SELECT: 
-                    if(areaId != MGUI_NULL_AREA) {
-                        MGUIEditor_DeleteStamp(areaId);
-                        MGUIEditor_Play(MGUI_SFX_DELETE);
-                    }
-                    break;
-                
-                // Hud scale mode
-                case MGUI_EDITOR_MODE_BRUSH_MOVE:
-                    MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_HUD, true);
-                    break;
-            }
-            break;
-
-        // Right click release
-        case MGUI_EVENT_ALT_UP:
-            if(mguiEditorMode==MGUI_EDITOR_MODE_BRUSH_HUD)
-                MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_MOVE, true);
-            break;
-
     }
 }
 
@@ -110,6 +20,8 @@ script "MegaUI Editor Chat" (int type, int message, int arg2) EVENT {
         terminate;
     if (type == GAMEEVENT_CHAT) {
         message = GetChatMessage(message, 0);
+        if(GetChar(message, 0) == '$')
+            message = StrParam(l:StrRight(message, StrLen(message)-1));
         switch(mguiEditor_ChatMode) {
             // Text message as brush
             case MGUI_EDITOR_CHAT_MODE_IDLE:
@@ -353,3 +265,117 @@ function void MGUIEditor_CheckInput(void) {
 }
 
 
+						// ################################################## //
+						// ----------------- Event handlers ----------------- //
+						// ################################################## //
+
+script "MegaUI Editor On Inspector Enter" (void) {
+    MGUIEditor_SetInspectorPosition(mguiInspectorPosition == MGUI_INSPECTOR_BOTTOM ? MGUI_INSPECTOR_TOP : MGUI_INSPECTOR_BOTTOM);
+}
+
+script "MegaUI Editor On Stamp Event" (int areaId, int e) {
+    switch(e) {
+
+        // Highlight on/off stamp
+        case MGUI_EVENT_ENTER:  
+            MGUIEditor_DrawStampHook(areaId, MGUI_EDITOR_HOOK_FOCUSED); 
+            break;
+
+        case MGUI_EVENT_EXIT:   
+            MGUIEditor_DrawStampHook(areaId, MGUI_EDITOR_HOOK_IDLE); 
+            break;
+
+        // Pick up stamp
+        case MGUI_EVENT_DOWN:
+            int slot = MGUIEditor_GetSlotFromStampId(areaId);
+            mguiEditorMouseType =       mguiEditorStampType[slot],
+            mguiEditorMouseContent =    mguiEditorStampContent[slot],
+            mguiEditorMouseFont =       mguiEditorStampFont[slot],
+            mguiEditorMouseXFactor =    mguiEditorStampXFactor[slot],
+            mguiEditorMouseYFactor =    mguiEditorStampYFactor[slot],
+            mguiEditorMouseWrap =       mguiEditorStampWrap[slot],
+            mguiEditorMouseAlpha =      mguiEditorStampAlpha[slot],
+            mguiEditorMouseSizeX =      mguiEditorStampSizeX[slot],
+            mguiEditorMouseSizeY =      mguiEditorStampSizeY[slot];
+            SetMouseX(mguiEditorStampX[slot]);
+            SetMouseY(mguiEditorStampY[slot]);
+            MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_MOVE, true);
+            MGUIEditor_SetHookRendering(false);
+            MGUIEditor_Play(MGUI_SFX_SELECT);
+            MGUIEditor_DeleteStamp(areaId);
+            break;
+
+        // Delete stamp
+        case MGUI_EVENT_ALT_DOWN:
+            MGUIEditor_DeleteStamp(areaId);
+            MGUIEditor_Play(MGUI_SFX_DELETE);
+            break;
+    }
+}
+
+
+script "MegaUI Editor On Brush Right" (int areaId, int e) {
+    if(e == MGUI_EVENT_ALT_DOWN)
+        MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_HUD, true);
+    else if(e == MGUI_EVENT_ALT_UP)
+        MGUIEditor_SetMode(MGUI_EDITOR_MODE_BRUSH_MOVE, true);
+}
+
+
+script "MegaUI Editor On Brush Left" (void) {
+    if(mguiEditorStampCount == MGUI_EDITOR_STAMP_MAX) {
+        MGUIEditor_Log(StrParam(s:"[ Error ] The ", d:MGUI_EDITOR_STAMP_MAX, s:" stamp limit is reached!!"));
+        MGUIEditor_Play(MGUI_SFX_ERROR);
+    }
+    else {
+        MGUIEditor_SetStamp(mguiEditorStampCount, 
+            mguiEditorMouseType, 
+            mguiEditorMouseContent, 
+            mguiEditorMouseFont, 
+            GetMouseX(), GetMouseY(), 
+            mguiEditorMouseXFactor, mguiEditorMouseYFactor, 
+            mguiEditorMouseWrap, 
+            mguiEditorMouseAlpha, 
+            mguiEditorMouseSizeX, mguiEditorMouseSizeY);
+        mguiEditorStampCount++;
+        MGUIEditor_Play(MGUI_SFX_CONFIRM);
+    }
+    MGUIEditor_SetMode(MGUI_EDITOR_MODE_SELECT, true);
+}
+
+    // ----------------- Handlers operations ----------------- //
+
+function void MGUI_SetEditorAllStampsActive(bool state) {
+    for(int slot = 0; slot < mguiEditorStampCount; slot++) {
+        int stampId = MGUIEditor_GetStampIdFromSlot(slot);
+        MGUI_SetEditorStampActive(stampId, state);
+    }
+}
+
+function void MGUI_SetEditorStampActive(int areaId, bool state) {
+    if(state) {
+        AddMouseEnter(areaId, "MegaUI Editor On Stamp Event");
+        AddMouseExit(areaId, "MegaUI Editor On Stamp Event");
+        AddMouseDown(areaId, "MegaUI Editor On Stamp Event");
+        AddMouseAltDown(areaId, "MegaUI Editor On Stamp Event");
+    }
+    else {
+        RemoveMouseEnter(areaId);
+        RemoveMouseExit(areaId);
+        RemoveMouseDown(areaId);
+        RemoveMouseAltDown(areaId);
+    }
+}
+
+function void MGUI_SetEditorBrushEventsActive(bool state) {
+    if(state) {
+        AddMouseDown(MGUI_SCREEN_AREA, "MegaUI Editor On Brush Left");
+        AddMouseAltDown(MGUI_SCREEN_AREA, "MegaUI Editor On Brush Right");
+        AddMouseAltUp(MGUI_SCREEN_AREA, "MegaUI Editor On Brush Right");
+    }
+    else {
+        RemoveMouseDown(MGUI_SCREEN_AREA);
+        RemoveMouseAltDown(MGUI_SCREEN_AREA);
+        RemoveMouseAltUp(MGUI_SCREEN_AREA);
+    }
+}

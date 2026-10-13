@@ -35,7 +35,7 @@ int     mguiEditorMouseType,
         mguiEditorMouseIsUniformScale;
 
 script "MegaUI Editor" (void) CLIENTSIDE {
-    if(!StartMouseMenu("MegaUI Editor Event")) {
+    if(!StartMouseMenu()) {
         MGUIEditor_Log("MegaUI Editor (or a another mod's mouse menu) is already running.");
         MGUIEditor_Play(MGUI_SFX_ERROR);
         terminate;
@@ -44,6 +44,7 @@ script "MegaUI Editor" (void) CLIENTSIDE {
     mguiEditorMouseType = MGUI_EDITOR_STAMP_GRAPHIC;
     MGUIEditor_SetDefaultMouseBrush();
     MGUIEditor_SetInspectorPosition(MGUI_INSPECTOR_BOTTOM);
+    AddMouseEnter(MGUI_EDITOR_INSPECTOR_DRAWID, "MegaUI Editor On Inspector Enter");
     SetPlayerProperty(0, 1, PROP_TOTALLYFROZEN);
     MGUIEditor_SetMode(MGUI_EDITOR_MODE_SELECT, true);
     int x, y, hudWidth, hudHeight;
@@ -174,6 +175,14 @@ script "MegaUI Help" (void) {
 function void MGUIEditor_SetMode(int mode, bool isSilent) {
     mguiEditorMode = mode;
     int graphic, offsetX, offsetY;
+    if(mode==MGUI_EDITOR_MODE_SELECT) {
+        MGUI_SetEditorBrushEventsActive(false);
+        MGUI_SetEditorAllStampsActive(true);
+    }
+    else {
+        MGUI_SetEditorAllStampsActive(false);
+        MGUI_SetEditorBrushEventsActive(true);
+    }
     switch(mode) {
         case MGUI_EDITOR_MODE_SELECT:
             graphic = "MEGAUI_0";
