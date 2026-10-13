@@ -242,7 +242,36 @@ So `DeleteMouseAreaRange(0, 3)` is same as `DeleteMouseArea(0); DeleteMouseArea(
 ---
 
 ## Mouse menu events
+### `void AddMouseEnter(int areaId, int scriptName)`
+### `void AddMouseExit(int areaId, int scriptName)`
+### `void AddMouseDown(int areaId, int scriptName)`
+### `void AddMouseUp(int areaId, int scriptName)`
+### `void AddMouseAltDown(int areaId, int scriptName)`
+### `void AddMouseAltUp(int areaId, int scriptName)`
 
+Sets `areaId`'s event handler script to `scriptName`.
+- The event handler script's received arguments are  `int areaId, int e` :
+    - `areaId` : the mouse area that triggered the event
+    - `e` : event type as per the below table.
+
+| Method | Role | `e` value |
+| - | - | - |
+| `AddMouseEnter()` | Mouse enters area | `MGUI_EVENT_ENTER` |
+| `AddMouseExit()` | Mouse leaves area | `MGUI_EVENT_EXIT` |
+| `AddMouseDown()` | Mouse left (mainfire) button press on area | `MGUI_EVENT_DOWN` |
+| `AddMouseUp()` | Mouse left (mainfire) button release on area | `MGUI_EVENT_UP` |
+| `AddMouseAltDown()` | Mouse right (altfire) button press on area | `MGUI_EVENT_ALT_DOWN` |
+| `AddMouseAltUp()` | Mouse right (altfire) button release on area | `MGUI_EVENT_ALT_UP` |
+
+- To set a event handler script to the entire screen area, you can use the special `areaId` value `MGUI_SCREEN_AREA`.
+
+
+--- 
+
+### `void AddAllMouseEvents(int areaId, int scriptName)`
+A shorthand for calling the six previous `AddMouse` functions.
+
+**Add events example**
 ```
 script "Various event handling styles" (void) CLIENTSIDE {
     SetMouseArea(51, 40, 120, 320, 240, 32, 32);
@@ -278,33 +307,7 @@ script "On Area 52 Any Click" (int areaId, int e) {
 }
 ```
 
-### `void AddMouseEnter(int areaId, int scriptName)`
-### `void AddMouseExit(int areaId, int scriptName)`
-### `void AddMouseDown(int areaId, int scriptName)`
-### `void AddMouseUp(int areaId, int scriptName)`
-### `void AddMouseAltDown(int areaId, int scriptName)`
-### `void AddMouseAltUp(int areaId, int scriptName)`
 
-Sets `areaId`'s event handler script to `scriptName`.
-- The event handler script's received arguments are  `int areaId, int e` :
-    - `areaId` : the mouse area that triggered the event
-    - `e` : event type as per the below table.
-
-| Method | Role | `e` value |
-| - | - | - |
-| `AddMouseEnter()` | Mouse enters area | `MGUI_EVENT_ENTER` |
-| `AddMouseExit()` | Mouse leaves area | `MGUI_EVENT_EXIT` |
-| `AddMouseDown()` | Mouse left (mainfire) button press on area | `MGUI_EVENT_DOWN` |
-| `AddMouseUp()` | Mouse left (mainfire) button release on area | `MGUI_EVENT_UP` |
-| `AddMouseAltDown()` | Mouse right (altfire) button press on area | `MGUI_EVENT_ALT_DOWN` |
-| `AddMouseAltUp()` | Mouse right (altfire) button release on area | `MGUI_EVENT_ALT_UP` |
-
-- To set a event handler script to the entire screen area, you can use the special `areaId` value `MGUI_SCREEN_AREA`.
-
---- 
-
-### `void AddAllMouseEvents(int areaId, int scriptName)`
-A shorthand for calling the six previous `AddMouse` functions.
 
 ---
 
@@ -317,7 +320,12 @@ A shorthand for calling the six previous `AddMouse` functions.
 
 Remove the event handler script from `areaId` (if it has one).
 
-**Example**
+---
+
+### `void RemoveAllMouseEvents(int areaId, int scriptName)`
+A shorthand for calling the six previous `RemoveMouse` functions.
+
+**Add & remove events example**
 ```
 // This mouse menu reacts when alternating left and right clicks (anywhere on screen, using MGUI_SCREEN_AREA)
 script "Alternate clicks" (void) CLIENTSIDE {
@@ -338,10 +346,6 @@ script "On right click" (void) {
 }
 ```
 
----
-
-### `void RemoveAllMouseEvents(int areaId, int scriptName)`
-A shorthand for calling the six previous `RemoveMouse` functions.
 
 ---
 
